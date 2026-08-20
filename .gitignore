@@ -1,0 +1,21 @@
+# Environment and Secret API Keys
+.env
+.env.local
+*.env
+
+# Python Bytecode & Cache
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+ENV/
+
+# System & IDE Files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Antigravity Logs & Brain Data
+.system_generated/

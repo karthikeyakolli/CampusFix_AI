@@ -1,0 +1,22 @@
+[
+  {
+    "id": "SCN-001",
+    "name": "Simple resolution",
+    "expected": "resolve"
+  },
+  {
+    "id": "SCN-002",
+    "name": "Hostel B common Wi-Fi incident",
+    "expected": "correlate_incident"
+  },
+  {
+    "id": "SCN-003",
+    "name": "Tool failure recovery",
+    "expected": "recover_or_escalate"
+  },
+  {
+    "id": "SCN-004",
+    "name": "Printer escalation",
+    "expected": "ticket_escalation"
+  }
+]

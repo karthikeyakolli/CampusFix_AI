@@ -1,0 +1,25 @@
+{
+  "locations": [
+    "Hostel B",
+    "Academic Building A",
+    "Central Library",
+    "Administration Block"
+  ],
+  "services": [
+    "Campus Wi-Fi",
+    "Campus Portal",
+    "Campus Printing",
+    "Campus Network"
+  ],
+  "demo_state": {
+    "Hostel B": {
+      "wifi": "degraded"
+    },
+    "Academic Building A": {
+      "portal": "healthy"
+    },
+    "Central Library": {
+      "printing": "healthy"
+    }
+  }
+}
