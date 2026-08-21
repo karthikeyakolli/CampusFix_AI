@@ -38,11 +38,11 @@ Verified Evidence & Procedure Documents:
 {evidence_str}
 
 INSTRUCTIONS:
-1. Provide a direct, helpful, concise resolution in clear standard English.
-2. DO NOT use asterisks (* or **), bullet formatting symbols, or markdown tags.
-3. Keep the answer under 3 sentences."""
+1. Provide a step-by-step structured resolution like ChatGPT.
+2. Structure your response into clear Markdown sections using `### 🔍 Step 1: ...`, `### 🛠️ Step 2: ...`, and `### 📋 Step 3: ...`.
+3. Use bold text, code blocks, and numbered lists for action points."""
 
-        system_instruction = "You are CollegeFix AI. Write only in clean, natural English prose without markdown asterisks."
+        system_instruction = "You are CollegeFix AI. Always format your responses in clear ChatGPT-style step-by-step markdown with headers, bold text, and numbered action lists."
 
         content = None
         if self.openrouter.is_available():
@@ -50,7 +50,7 @@ INSTRUCTIONS:
             source_info = "OpenRouter (LLaMA-3.3-70B)"
 
         if content:
-            content = content.replace("*", "").strip()
+            content = content.strip()
 
         return {
             "content": content,

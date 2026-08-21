@@ -92,9 +92,9 @@ Verified Evidence & Procedure Documents:
 {evidence_str}
 
 INSTRUCTIONS:
-1. Provide a direct, factual, and helpful resolution in clear, standard English prose.
-2. DO NOT use markdown asterisks (* or **), bullet points with asterisks, or formatting symbols.
-3. Keep the response concise, accurate, and professional (under 3 sentences)."""
+1. Provide a step-by-step structured resolution like ChatGPT.
+2. Structure your response into clear Markdown sections using `### 🔍 Step 1: ...`, `### 🛠️ Step 2: ...`, and `### 📋 Step 3: ...`.
+3. Use bold text, code blocks, and numbered lists for action points."""
 
         try:
             url = "https://api.groq.com/openai/v1/chat/completions"
@@ -102,7 +102,7 @@ INSTRUCTIONS:
                 "model": self.model_name,
                 "messages": [{"role": "user", "content": prompt}],
                 "temperature": 0.1,
-                "max_tokens": 200
+                "max_tokens": 400
             }
             headers = {
                 "Content-Type": "application/json",
@@ -112,7 +112,7 @@ INSTRUCTIONS:
             with urllib.request.urlopen(req, timeout=4) as resp:
                 res_data = json.loads(resp.read().decode("utf-8"))
                 text = res_data["choices"][0]["message"]["content"]
-                text = text.replace("*", "").strip()
+                text = text.strip()
                 return {
                     "source": "Groq LLaMA-3.3-70B (Fast-Path)",
                     "content": text

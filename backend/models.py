@@ -81,6 +81,7 @@ try:
         evidence_list: List[str] = []
         timeline_events: List[AgentEvent] = []
         ticket_id: Optional[str] = None
+        assigned_ticket: Optional[Dict[str, Any]] = None
         incident_correlated: bool = False
         simulated: bool = True
 
@@ -142,6 +143,7 @@ except ImportError:
         evidence_list: List[str] = field(default_factory=list)
         timeline_events: List[AgentEvent] = field(default_factory=list)
         ticket_id: Optional[str] = None
+        assigned_ticket: Optional[Dict[str, Any]] = None
         incident_correlated: bool = False
         simulated: bool = True
         def dict(self):

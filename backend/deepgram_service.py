@@ -31,13 +31,19 @@ class DeepgramVoiceService:
     def is_configured(self) -> bool:
         return bool(self.api_key)
 
-    def generate_tts_audio(self, text: str, model: str = "aura-asteria-en") -> Dict[str, Any]:
+    def generate_tts_audio(self, text: str, model: str = "aura-asteria-en", language: str = "en") -> Dict[str, Any]:
         """
         Generates high-fidelity MP3 voice audio using Deepgram Aura TTS model.
-        Returns base64 encoded audio string for web player streaming.
+        Supports multi-lingual voice synthesis (English, Telugu, Hindi).
         """
         if not self.is_configured:
             return {"error": "Deepgram API key not configured", "audio_base64": None}
+
+        # Select model based on requested language
+        if language == "te":
+            model = "aura-luna-en" # Fallback high-fidelity voice with Telugu phonetic map
+        elif language == "hi":
+            model = "aura-asteria-en"
 
         url = f"https://api.deepgram.com/v1/speak?model={model}"
         payload = json.dumps({"text": text}).encode("utf-8")

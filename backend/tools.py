@@ -27,21 +27,43 @@ class SafeToolAdapter:
         if "hostel" in loc_lower or "hostel b" in loc_lower:
             return True, {
                 "ap_id": "AP-HB-04",
-                "location": "Hostel B",
+                "location": "Hostel B (Vignan Boys Hostel)",
                 "status": "DEGRADED",
                 "packet_loss_pct": 82.5,
                 "latency_ms": 340,
+                "jitter_ms": 48.2,
+                "rssi_dbm": -84,
+                "bandwidth_mbps": 1.2,
                 "connected_clients": 142,
-                "detail": "High channel interference & 82% packet loss on AP-HB-04"
+                "mqtt_topic": "vfstr/telemetry/hostel_b/ap_hb_04",
+                "detail": "High 2.4GHz/5GHz co-channel interference & 82.5% packet loss on AP-HB-04"
+            }
+        elif "cse" in loc_lower or "h-block" in loc_lower:
+            return True, {
+                "ap_id": "AP-HBLOCK-CSE-01",
+                "location": "H-Block (CSE Department)",
+                "status": "HEALTHY",
+                "packet_loss_pct": 0.0,
+                "latency_ms": 12,
+                "jitter_ms": 1.4,
+                "rssi_dbm": -42,
+                "bandwidth_mbps": 850.0,
+                "connected_clients": 86,
+                "mqtt_topic": "vfstr/telemetry/hblock/ap_cse_01",
+                "detail": "HPC Fiber Backhaul operational at 1Gbps"
             }
         elif "library" in loc_lower:
             return True, {
                 "ap_id": "AP-LIB-01",
-                "location": "Central Library",
+                "location": "Central Library (L-Block)",
                 "status": "HEALTHY",
                 "packet_loss_pct": 0.2,
                 "latency_ms": 14,
+                "jitter_ms": 2.1,
+                "rssi_dbm": -55,
+                "bandwidth_mbps": 450.0,
                 "connected_clients": 68,
+                "mqtt_topic": "vfstr/telemetry/library/ap_lib_01",
                 "detail": "All AP nodes in Central Library operating normally"
             }
         else:
@@ -51,8 +73,12 @@ class SafeToolAdapter:
                 "status": "HEALTHY",
                 "packet_loss_pct": 0.0,
                 "latency_ms": 12,
+                "jitter_ms": 1.2,
+                "rssi_dbm": -48,
+                "bandwidth_mbps": 500.0,
                 "connected_clients": 45,
-                "detail": "Network status normal"
+                "mqtt_topic": "vfstr/telemetry/main/ap_01",
+                "detail": "SNMP Telemetry Socket healthy"
             }
 
     @staticmethod

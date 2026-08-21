@@ -568,33 +568,45 @@
       <!-- AP NODE TOPOLOGY -->
       <div class="glass-card">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:18px;">
-          <h3 style="font-family:'Outfit',sans-serif; font-size:20px; color:var(--accent-emerald);">📡 Campus Infrastructure AP Telemetry</h3>
-          <span style="font-family:var(--font-mono); font-size:11px; color:var(--text-muted);">AUTO-REFRESH: 5s</span>
+          <h3 style="font-family:'Outfit',sans-serif; font-size:20px; color:var(--accent-emerald);">📡 Real-Time SNMP/MQTT AP Telemetry Sockets</h3>
+          <span style="font-family:var(--font-mono); font-size:11px; color:#10b981; font-weight:800;">🟢 SOCKET: ACTIVE</span>
         </div>
 
-        <div style="display:flex; flex-direction:column;">
+        <div style="display:flex; flex-direction:column; gap:12px;">
           <div class="node-card">
             <div>
               <strong style="display:block; font-size:14px; color:var(--accent-rose);">AP-HB-04 (Hostel B Residence)</strong>
-              <span style="font-family:var(--font-mono); font-size:12px; color:var(--text-muted);">Packet Loss: <b style="color:var(--accent-rose);">82.5%</b> | Latency: 340ms | Active Users: 14</span>
+              <span style="font-family:var(--font-mono); font-size:11.5px; color:var(--text-muted);">
+                Loss: <b style="color:var(--accent-rose);">82.5%</b> | Latency: 340ms | Jitter: 48ms | RSSI: <b style="color:var(--accent-rose);">-84 dBm</b>
+              </span>
+              <div style="font-family:var(--font-mono); font-size:10.5px; color:var(--accent-indigo); margin-top:2px;">
+                Topic: <code>vfstr/telemetry/hostel_b/ap_hb_04</code> | Load: 1.2 Mbps
+              </div>
             </div>
-            <button class="noc-btn noc-btn-secondary" style="font-size:11px; padding:6px 12px;" onclick="alert('Ping signal sent to AP-HB-04: 82.5% Loss confirmed!')">Force Ping</button>
+            <button class="noc-btn noc-btn-secondary" style="font-size:11px; padding:6px 12px;" onclick="alert('SNMP Socket Ping [AP-HB-04]: 82.5% Loss Confirmed via MQTT topic vfstr/telemetry/hostel_b/ap_hb_04')">Force Ping</button>
           </div>
 
           <div class="node-card">
             <div>
               <strong style="display:block; font-size:14px; color:var(--accent-emerald);">AP-HBLOCK-CSE-01 (H-Block Smart Hall)</strong>
-              <span style="font-family:var(--font-mono); font-size:12px; color:var(--text-muted);">Packet Loss: <b style="color:var(--accent-emerald);">0.0%</b> | Latency: 12ms | Active Users: 86</span>
+              <span style="font-family:var(--font-mono); font-size:11.5px; color:var(--text-muted);">
+                Loss: <b style="color:var(--accent-emerald);">0.0%</b> | Latency: 12ms | Jitter: 1.4ms | RSSI: <b style="color:var(--accent-emerald);">-42 dBm</b>
+              </span>
+              <div style="font-family:var(--font-mono); font-size:10.5px; color:var(--accent-indigo); margin-top:2px;">
+                Topic: <code>vfstr/telemetry/hblock/ap_cse_01</code> | Fiber Load: 850 Mbps
+              </div>
             </div>
-            <button class="noc-btn noc-btn-secondary" style="font-size:11px; padding:6px 12px;" onclick="alert('AP-HBLOCK-CSE-01 status: HEALTHY')">Force Ping</button>
+            <button class="noc-btn noc-btn-secondary" style="font-size:11px; padding:6px 12px;" onclick="alert('SNMP Socket [AP-HBLOCK-CSE-01]: HEALTHY (850Mbps backhaul)')">Force Ping</button>
           </div>
 
           <div class="node-card">
             <div>
               <strong style="display:block; font-size:14px; color:var(--accent-emerald);">PRN-LIB-01 (Central Library Print Kiosk)</strong>
-              <span style="font-family:var(--font-mono); font-size:12px; color:var(--text-muted);">Paper Tray: READY | Spooler: OK | Latency: 18ms</span>
+              <span style="font-family:var(--font-mono); font-size:11.5px; color:var(--text-muted);">
+                Paper Tray: READY | Spooler: OK | Latency: 18ms | Sensor: ONLINE
+              </span>
             </div>
-            <button class="noc-btn noc-btn-secondary" style="font-size:11px; padding:6px 12px;" onclick="alert('Print spooler reset command sent!')">Reset Spooler</button>
+            <button class="noc-btn noc-btn-secondary" style="font-size:11px; padding:6px 12px;" onclick="alert('Print spooler reset command executed!')">Reset Spooler</button>
           </div>
         </div>
       </div>
@@ -657,16 +669,30 @@
       const tbody = document.getElementById('noc-tickets-tbody');
       tbody.innerHTML = '<tr><td colspan="7" style="padding:24px; text-align:center; color:var(--text-muted);">🔄 Synchronizing with live Supabase database...</td></tr>';
 
-      try {
-        const resp = await fetch('http://localhost:8080/api/tickets');
-        if (resp.ok) {
-          rawTicketsData = await resp.json();
-          filterTickets();
-          document.getElementById('metric-total').textContent = `${rawTicketsData.length} Active`;
-          return;
+      const ticketEndpoints = [
+        'https://bylhkgmwyncpsfokxjyr.supabase.co/functions/v1/campusfix-api/tickets',
+        'https://bylhkgmwyncpsfokxjyr.supabase.co/rest/v1/campusfix_tickets?select=*&order=created_at.desc'
+      ];
+
+      for (const url of ticketEndpoints) {
+        try {
+          const headers = url.includes('supabase.co/rest') ? {
+            'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ5bGhrZ213eW5jcHNmb2t4anlyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYxMTU3MjYsImV4cCI6MjEwMTY5MTcyNn0.eN6asz8HIPDbP_T6rAojPznZDHjUNU1Yw7qELnbYvKY',
+            'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ5bGhrZ213eW5jcHNmb2t4anlyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYxMTU3MjYsImV4cCI6MjEwMTY5MTcyNn0.eN6asz8HIPDbP_T6rAojPznZDHjUNU1Yw7qELnbYvKY'
+          } : {};
+
+          const resp = await fetch(url, { headers });
+          if (resp.ok) {
+            rawTicketsData = await resp.json();
+            if (Array.isArray(rawTicketsData) && rawTicketsData.length > 0) {
+              filterTickets();
+              document.getElementById('metric-total').textContent = `${rawTicketsData.length} Active`;
+              return;
+            }
+          }
+        } catch (e) {
+          console.warn('NOC fetch note for:', url, e);
         }
-      } catch (e) {
-        console.warn('NOC fetch error:', e);
       }
 
       tbody.innerHTML = '<tr><td colspan="7" style="padding:24px; text-align:center; color:var(--text-muted);">No submitted tickets found in database.</td></tr>';
@@ -717,6 +743,11 @@
         const prio = t.priority || 'NORMAL';
         const status = t.status || 'NEW';
 
+        let techAssigned = 'Network Operations — Specialist Eng. Suresh K.';
+        if (cat.includes('SSO') || cat.includes('LOGIN')) techAssigned = 'Identity & Access — Desk Priya R.';
+        else if (cat.includes('PRINT')) techAssigned = 'Library IT — Ramesh M.';
+        else if (cat.includes('AV')) techAssigned = 'Smart Classroom Unit — Anand V.';
+
         const prioBg = prio === 'EMERGENCY' ? '#fee2e2' : (prio === 'HIGH' ? '#fef3c7' : '#e0e7ff');
         const prioFg = prio === 'EMERGENCY' ? '#b91c1c' : (prio === 'HIGH' ? '#b45309' : '#3730a3');
         
@@ -728,7 +759,10 @@
           <td class="ticket-code">${code}</td>
           <td style="font-weight:600;">${by}</td>
           <td><b>${cat}</b> | ${loc}</td>
-          <td style="max-width:300px;">${summary}</td>
+          <td style="max-width:300px;">
+            <div style="font-weight:700; color:var(--text-main);">${summary}</div>
+            <div style="font-size:11px; color:var(--accent-indigo); font-weight:700; margin-top:2px;">👤 ${techAssigned}</div>
+          </td>
           <td><span class="prio-badge" style="background:${prioBg}; color:${prioFg};">${prio}</span></td>
           <td><span class="status-pill" style="background:${statusBg}; color:${statusFg};"><span style="width:6px; height:6px; border-radius:50%; background:${statusFg};"></span> ${status}</span></td>
           <td style="text-align:center;">

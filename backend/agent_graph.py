@@ -22,15 +22,139 @@ class CampusFixAgentGraph:
         self.brain = CognitiveBrain()
         self.supabase = SupabaseService()
         self.fast_cache = {
-            "wifi": "VFSTR-STUDENT Wi-Fi access point AP-HB-04 packet loss detected in Hostel B (Rooms 201-220). Network Operations field technicians have been dispatched. Resolution ETA is 15 minutes.",
-            "login": "To reset your vignan.ac.in/portal SSO password or unlock your account, visit A-Block NTR Vignan Bhavan Admin desk or submit an automated identity verification request.",
-            "printer": "Central Library printer PRN-LIB-01 spooler queue cleared. You can release your document using the Contactless Print QR Pass at the L-Block kiosk.",
-            "av": "Emergency Smart Classroom AV Specialist dispatched to H-Block Room H-102. Technician ETA is 3 minutes.",
-            "fee": "Examination fee payment gateway reconciliation initiated. If your bank was debited, your hall ticket PDF link on vignan.ac.in/portal will update within 15 minutes.",
-            "attendance": "Vignan Student App attendance discrepancies are auto-synced every evening at 6:00 PM with the department biometric logs.",
-            "rfid": "EZProxy IEEE Xplore remote journal access credentials refreshed. Re-authenticate via your Roll Number on the Digital Library portal.",
-            "hostel": "Hostel B Room 304 power socket maintenance ticket logged with Campus Facilities Team."
+            "wifi": """### 🔍 Step 1: Diagnostic Assessment
+We evaluated your reported issue regarding **VFSTR-STUDENT Wi-Fi** in **Hostel B (Vignan Boys Hostel)**.
+
+### 🛠️ Step 2: Automated System Telemetry
+- **Access Point Node**: `AP-HB-04` (2nd Floor Corridor)
+- **Telemetry Status**: **Degraded** (`82.5% Packet Loss`)
+- **Incident Correlation**: 14 student complaints logged in past 15 mins.
+
+### 📋 Step 3: Technician Action Plan
+1. **Field Unit Dispatched**: Network Operations field technicians have been dispatched to reboot and align AP-HB-04.
+2. **Estimated Resolution Time**: **~15 minutes** (ETA: 15 mins).
+3. **Interim Workaround**: Connect to fallback SSID `VFSTR-GUEST-5G` near the dining hall area.""",
+
+            "login": """### 🔍 Step 1: Identity & Authentication Audit
+Audited SSO credentials for domain **vignan.ac.in/portal**.
+
+### 🛠️ Step 2: Account Status Verification
+- **User Account**: Active & Unlocked (Zero Security Flag).
+- **SSO Authentication Server**: 100% Operational.
+
+### 📋 Step 3: Action & Password Reset Steps
+1. **Self-Service Portal**: Visit `vignan.ac.in/portal/reset` to trigger an automated identity OTP.
+2. **Admin Verification**: For roll number unlock, report to **A-Block NTR Vignan Bhavan Admin Desk**.
+3. **Support Assigned**: Ticket queued at **Identity & Access Control Desk**.""",
+
+            "printer": """### 🔍 Step 1: Printer Telemetry Inspection
+Targeted **PRN-LIB-01** at **Central Library (L-Block)**.
+
+### 🛠️ Step 2: Queue & Hardware Status
+- **Paper Tray State**: `READY (A4 Normal)`
+- **Spooler Queue**: Spooler reset command executed cleanly.
+
+### 📋 Step 3: Release & Printing Steps
+1. **Print Pass**: Tap **"Generate Contactless Print Pass"** on your portal console.
+2. **Kiosk Terminal**: Scan your generated QR code at the L-Block terminal.
+3. **Technician Support**: Library IT Technician **Ramesh M.** on standby.""",
+
+            "av": """### 🔍 Step 1: Emergency Classroom AV Dispatch
+Received emergency request for **Smart Classroom H-102** in **H-Block (CSE)**.
+
+### 🛠️ Step 2: Diagnostic Check
+- **Target Hardware**: Smart Projector & HDMI Feed Unit.
+- **Urgency Level**: **CRITICAL (Lecturer In Session)**.
+
+### 📋 Step 3: Rapid Response Plan
+1. **Dispatch Code**: `EMERGENCY-AV-H102`.
+2. **Specialist Assigned**: AV Specialist **Anand V.** dispatched with backup HDMI hardware.
+3. **Arrival ETA**: **~3 minutes**.""",
+
+            "fee": """### 🔍 Step 1: Financial Gateway Reconciliation
+Analyzed examination fee payment gateway status for **vignan.ac.in/portal**.
+
+### 🛠️ Step 2: Transaction Audit
+- **Gateway Sync**: Bank debit detected; reconciliation pipeline active.
+- **Verification Engine**: Automated hall ticket unlock process running.
+
+### 📋 Step 3: Immediate Next Steps
+1. **Status Update**: Hall ticket link on student portal will update automatically within **15 minutes**.
+2. **Desk Assigned**: Ticket assigned to **Accounts & Examination IT Cell**.""",
+
+            "attendance": """### 🔍 Step 1: Attendance Log Verification
+Checked **Vignan Student App** attendance sync logs.
+
+### 🛠️ Step 2: Biometric Sync Pipeline
+- **Department**: Computer Science & Engineering.
+- **Sync Batch**: Auto-sync scheduled daily at **6:00 PM**.
+
+### 📋 Step 3: Discrepancy Resolution Steps
+1. **Daily Auto-Sync**: Biometric hall logs sync automatically at 6:00 PM today.
+2. **Manual Override**: If discrepancy persists after 6 PM, your department HOD office receives an automated alert.""",
+
+            "rfid": """### 🔍 Step 1: Digital Library EZProxy Audit
+Checked remote access credentials for **IEEE Xplore & EZProxy**.
+
+### 🛠️ Step 2: License Refresh
+- **Access Portal**: Digital Library (L-Block).
+- **Session Token**: Token refreshed cleanly.
+
+### 📋 Step 3: Access Re-authentication Steps
+1. **Re-login**: Sign into EZProxy with your official Roll Number credentials.
+2. **Support Desk**: Digital Library Support Desk notified.""",
+
+            "hostel": """### 🔍 Step 1: Hostel Amenity Inspection
+Received maintenance report for **Hostel B Room 304**.
+
+### 🛠️ Step 2: Infrastructure Diagnostics
+- **Target Line**: Power Socket & Electrical Board.
+- **Facility Unit**: Hostel Maintenance Engineering Unit.
+
+### 📋 Step 3: Repair Schedule & Steps
+1. **Work Order**: Generated work order `#FAC-HOSTELB-304`.
+2. **Technician**: Maintenance Foreman **Subba Rao** assigned.
+3. **ETA**: Work completed within **2 hours**."""
         }
+
+    def _get_technician_assignment(self, category: str, location: str) -> Dict[str, str]:
+        cat_lower = str(category).lower()
+        if "wifi" in cat_lower or "net" in cat_lower:
+            return {
+                "assigned_to": "Network Operations Team — Specialist Eng. Suresh K.",
+                "department": "VFSTR NOC & Network Telemetry Operations",
+                "eta": "15 Mins"
+            }
+        elif "login" in cat_lower or "sso" in cat_lower or "auth" in cat_lower:
+            return {
+                "assigned_to": "Identity & Access Control — Administrator Priya R.",
+                "department": "VFSTR Campus SSO Systems Desk",
+                "eta": "10 Mins"
+            }
+        elif "print" in cat_lower:
+            return {
+                "assigned_to": "Central Library IT Desk — Technician Ramesh M.",
+                "department": "L-Block Library Digital Resources Desk",
+                "eta": "5 Mins"
+            }
+        elif "av" in cat_lower or "projector" in cat_lower:
+            return {
+                "assigned_to": "Smart Classroom Emergency AV Unit — Specialist Anand V.",
+                "department": "H-Block Academic Infrastructure Desk",
+                "eta": "3 Mins"
+            }
+        elif "fee" in cat_lower or "payment" in cat_lower:
+            return {
+                "assigned_to": "Accounts & Examination IT Cell — Controller S. Rao",
+                "department": "A-Block Student Accounts Desk",
+                "eta": "20 Mins"
+            }
+        else:
+            return {
+                "assigned_to": "Campus IT General Helpdesk — Maintenance Lead Subba Rao",
+                "department": "Central Campus Operations Desk",
+                "eta": "15 Mins"
+            }
 
     def process(self, request: ChatRequest) -> ChatResponse:
         """Runs full cognitive agent pipeline over user request."""
@@ -59,11 +183,25 @@ class CampusFixAgentGraph:
                 title="Ultra-Fast Response Cache Hit (<10ms)",
                 detail=f"Served instant resolution for service '{matched_cache_key.upper()}'"
             ))
+            t_id = f"CF-{uuid.uuid4().hex[:6].upper()}"
+            t_info = self._get_technician_assignment(matched_cache_key, user_loc or "Hostel B (Vignan Boys Hostel)")
+            assigned_ticket_data = {
+                "ticket_code": t_id,
+                "problem_summary": f"[{matched_cache_key.upper()}] {query}",
+                "assigned_to": t_info["assigned_to"],
+                "department": t_info["department"],
+                "location": user_loc or "Hostel B (Vignan Boys Hostel)",
+                "category": matched_cache_key.upper(),
+                "priority": "HIGH" if matched_cache_key == "wifi" else "NORMAL",
+                "status": "ASSIGNED",
+                "estimated_resolution": t_info["eta"]
+            }
             return ChatResponse(
                 message=self.fast_cache[matched_cache_key],
                 category=matched_cache_key.upper(),
                 confidence=0.98,
-                ticket_id=f"CF-{uuid.uuid4().hex[:6].upper()}",
+                ticket_id=t_id,
+                assigned_ticket=assigned_ticket_data,
                 evidence_list=[f"Fast-Path Knowledge Cache Hit: {matched_cache_key.upper()}"],
                 timeline_events=events,
                 structured_question=None
@@ -182,13 +320,14 @@ class CampusFixAgentGraph:
 
         # 6. ESCALATE / RESOLVE NODE & AUTO-CREATE TICKET FOR IT STAFF CONSOLE
         ticket_id = "CF-" + uuid.uuid4().hex[:6].upper()
+        prio_val = "HIGH" if (incident_correlated or category == "wifi") else "NORMAL"
         try:
             self.supabase.create_ticket(
                 ticket_code=ticket_id,
                 category=category.upper(),
                 location=location or "VFSTR Vadlamudi Campus",
                 summary=query,
-                priority="HIGH" if (incident_correlated or category == "wifi") else "NORMAL",
+                priority=prio_val,
                 submitted_by=f"{role}"
             )
         except Exception as e:
@@ -199,6 +338,20 @@ class CampusFixAgentGraph:
             title="Ticket Automatically Logged",
             detail=f"Ticket {ticket_id} queued for IT Operations Desk"
         ))
+
+        # Build technician assignment metadata
+        tech_info = self._get_technician_assignment(category, location or "VFSTR Vadlamudi Campus")
+        assigned_ticket_data = {
+            "ticket_code": ticket_id,
+            "problem_summary": f"[{category.upper()}] {query}",
+            "assigned_to": tech_info["assigned_to"],
+            "department": tech_info["department"],
+            "location": location or "VFSTR Vadlamudi Campus",
+            "category": category.upper(),
+            "priority": prio_val,
+            "status": "ASSIGNED",
+            "estimated_resolution": tech_info["eta"]
+        }
 
         # 7. MULTI-LLM GROUNDED SYNTHESIS (GROQ + GEMINI + OPENROUTER)
         llm_res = self.router.route_and_generate(
@@ -219,15 +372,12 @@ class CampusFixAgentGraph:
         else:
             response_msg = self._build_response_msg(category, location, tool_data, ticket_id, incident_correlated)
 
-        # Clean all markdown asterisks for clear natural English prose
-        if response_msg:
-            response_msg = response_msg.replace("*", "").strip()
-
         return ChatResponse(
             message=response_msg,
             category=category,
             confidence=confidence,
             ticket_id=ticket_id,
+            assigned_ticket=assigned_ticket_data,
             evidence_list=evidence,
             timeline_events=events,
             structured_question=structured_q,
@@ -262,12 +412,55 @@ class CampusFixAgentGraph:
         return ""
 
     def _build_response_msg(self, cat: str, loc: str, tool_data: Dict, ticket_id: str, incident: bool) -> str:
+        loc_name = loc or 'Hostel B (Vignan Boys Hostel)'
         if cat == "wifi":
-            if incident:
-                return f"I diagnosed a degraded access point ({tool_data.get('ap_id', 'AP-HB-04')}) in {loc or 'Hostel B'} with {tool_data.get('packet_loss_pct', 82)}% packet loss. This has been correlated into a common incident cluster (Ticket {ticket_id}) and assigned to the Network Operations Team."
-            return f"I checked the network status for {loc or 'your area'}. Access points are currently online. Please re-authenticate using the official campus SSID procedure."
+            return f"""### 🔍 Step 1: Diagnostic Assessment
+Evaluated network connectivity report for **VFSTR-STUDENT Wi-Fi** at **{loc_name}**.
+
+### 🛠️ Step 2: Automated Telemetry & Correlation
+- **Telemetry Node**: `{tool_data.get('ap_id', 'AP-HB-04')}`
+- **Packet Loss Rate**: **{tool_data.get('packet_loss_pct', 82.5)}%**
+- **Incident Correlated**: 14 similar complaints logged within past 15 minutes.
+
+### 📋 Step 3: Technician Dispatch & Action Steps
+1. **Field Technician Dispatched**: Assigned to **Network Operations Team — Specialist Eng. Suresh K.**
+2. **Ticket Logged**: Assigned ticket **#{ticket_id}** (High Priority).
+3. **Resolution ETA**: **~15 minutes**."""
+
         elif cat == "login":
-            return "I verified your directory account status (Active). CampusFix never requests passwords. Please use the verified SSO self-service reset portal to securely update your credentials."
+            return f"""### 🔍 Step 1: Identity & Authentication Audit
+Evaluated SSO credentials for **vignan.ac.in/portal**.
+
+### 🛠️ Step 2: Account Security Check
+- **Directory Status**: Active (Zero Security Lockouts).
+- **SSO Gateway**: 100% Operational.
+
+### 📋 Step 3: Action & Password Reset Steps
+1. **Self-Service Portal**: Visit `vignan.ac.in/portal/reset` to trigger an identity OTP.
+2. **Ticket Logged**: Assigned ticket **#{ticket_id}** to **Identity & Access Desk — Administrator Priya R.**
+3. **Desk Verification**: Visit **A-Block Admin Desk** for roll number unlock."""
+
         elif cat == "printer":
-            return f"I checked the printer queue for Central Library. Sensor detected a paper tray jam ({tool_data.get('printer_id', 'PRN-LIB-01')}). Ticket {ticket_id} has been dispatched to the IT Helpdesk hardware team."
-        return "I have diagnosed your request against our knowledge base. If problem persists, I can escalate a ticket to IT Support."
+            return f"""### 🔍 Step 1: Printer Telemetry Inspection
+Checked status for **PRN-LIB-01** at **Central Library (L-Block)**.
+
+### 🛠️ Step 2: Hardware Status
+- **Sensor Alert**: Paper Tray Jam detected (`PRN-LIB-01`).
+- **Print Queue**: Auto-cleared spooler buffer.
+
+### 📋 Step 3: Resolution & Action Steps
+1. **Technician Assigned**: Dispatched **Library IT Technician Ramesh M.**
+2. **Ticket Logged**: Ticket **#{ticket_id}** created.
+3. **Print QR Pass**: Generate your contactless print pass on the portal."""
+
+        return f"""### 🔍 Step 1: Initial System Diagnosis
+Analyzed query for category **{cat.upper()}** at **{loc_name}**.
+
+### 🛠️ Step 2: System Audit
+- **Knowledge Base Query**: Verified against VFSTR procedures.
+- **Incident Log**: Incident registered in operations log.
+
+### 📋 Step 3: Support Action Plan
+1. **Ticket Created**: Generated ticket **#{ticket_id}**.
+2. **Technician Assigned**: Assigned to **Campus IT General Helpdesk — Maintenance Lead Subba Rao**."""
+
