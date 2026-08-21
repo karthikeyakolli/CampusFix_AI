@@ -1,6 +1,6 @@
 """
 CampusFix — Supabase Live Database Adapter (supabase_service.py)
-Direct REST API Integration with live Supabase project.
+Direct REST & RPC API Integration with live Supabase PostgreSQL project.
 """
 
 import os
@@ -10,7 +10,7 @@ import urllib.parse
 from typing import Dict, Any, List, Optional
 
 class SupabaseService:
-    """Live Supabase Database service client."""
+    """Live Supabase Database service client with native PL/pgSQL RPC execution."""
 
     def __init__(self, url: Optional[str] = None, key: Optional[str] = None):
         self._load_dotenv()
@@ -38,32 +38,34 @@ class SupabaseService:
     def is_configured(self) -> bool:
         return bool(self.url and self.key)
 
-    def authenticate_user(self, identifier: str) -> Dict[str, Any]:
-        """Verifies credentials against live Supabase campusfix_users table."""
-        identifier = identifier.strip().lower()
+    def _call_rpc(self, fn_name: str, payload: Dict[str, Any]) -> Optional[Any]:
+        """Generic RPC caller for Supabase PostgreSQL PL/pgSQL stored procedures."""
         if not self.is_configured:
-            return self._fallback_auth(identifier)
-
+            return None
         try:
-            endpoint = f"{self.url}/rest/v1/campusfix_users?email=eq.{urllib.parse.quote(identifier)}&select=*"
-            req = urllib.request.Request(endpoint, headers={
-                "apikey": self.key,
-                "Authorization": f"Bearer {self.key}"
-            })
+            endpoint = f"{self.url}/rest/v1/rpc/{fn_name}"
+            req = urllib.request.Request(
+                endpoint,
+                data=json.dumps(payload).encode("utf-8"),
+                headers={
+                    "apikey": self.key,
+                    "Authorization": f"Bearer {self.key}",
+                    "Content-Type": "application/json"
+                }
+            )
             with urllib.request.urlopen(req, timeout=5) as resp:
-                res = json.loads(resp.read().decode("utf-8"))
-                if res and len(res) > 0:
-                    user = res[0]
-                    return {
-                        "authenticated": True,
-                        "email": user.get("email"),
-                        "full_name": user.get("full_name"),
-                        "role": user.get("role", "Student"),
-                        "department": user.get("department", "Computer Science"),
-                        "primary_location": user.get("primary_location", "Hostel B")
-                    }
+                return json.loads(resp.read().decode("utf-8"))
         except Exception as e:
-            print(f"Supabase Auth Warning: {e}")
+            print(f"Supabase RPC Warning [{fn_name}]: {e}")
+            return None
+
+    def authenticate_user(self, identifier: str) -> Dict[str, Any]:
+        """Verifies credentials via Supabase RPC fn_authenticate_user."""
+        identifier = identifier.strip().lower()
+        if self.is_configured:
+            rpc_res = self._call_rpc("fn_authenticate_user", {"p_identifier": identifier})
+            if rpc_res and isinstance(rpc_res, dict):
+                return rpc_res
 
         return self._fallback_auth(identifier)
 
@@ -93,7 +95,7 @@ class SupabaseService:
         }
 
     def fetch_tickets(self) -> List[Dict[str, Any]]:
-        """Fetch all submitted student & faculty tickets from live Supabase or in-memory store."""
+        """Fetch all submitted student & faculty tickets from live Supabase or fallback store."""
         if not self.is_configured:
             return self.tickets_store
         try:
@@ -126,55 +128,45 @@ class SupabaseService:
             print(f"Supabase Fetch Nodes Warning: {e}")
             return self._fallback_digital_twin()
 
-    def create_ticket(self, ticket_code: str, category: str, location: str, summary: str, priority: str = "NORMAL", submitted_by: str = "Student") -> Dict[str, Any]:
-        """Insert newly generated ticket into live Supabase database and in-memory store."""
+    def create_ticket(self, category: str, location: str, summary: str, priority: str = "NORMAL", submitted_by: str = "Student") -> Dict[str, Any]:
+        """Creates newly generated ticket via Supabase RPC fn_create_ticket."""
+        if self.is_configured:
+            rpc_res = self._call_rpc("fn_create_ticket", {
+                "p_category": category,
+                "p_location": location,
+                "p_summary": summary,
+                "p_priority": priority,
+                "p_submitted_by": submitted_by
+            })
+            if rpc_res and isinstance(rpc_res, dict):
+                self.tickets_store.insert(0, rpc_res)
+                return rpc_res
+
+        # Fallback local insertion
+        ticket_code = f"CF-WIFI-{len(self.tickets_store)+1043}"
         payload = {
             "ticket_code": ticket_code,
             "category": category,
             "location": location,
-            "summary": summary,
             "issue_summary": summary,
             "priority": priority,
             "status": "NEW",
+            "assigned_team": "Network Operations" if "wifi" in category.lower() else "IT Helpdesk",
             "submitted_by": submitted_by
         }
-        # Prepend to in-memory store
         self.tickets_store.insert(0, payload)
+        return payload
 
-        if not self.is_configured:
-            return payload
-        try:
-            endpoint = f"{self.url}/rest/v1/campusfix_tickets"
-            req = urllib.request.Request(
-                endpoint,
-                data=json.dumps({
-                    "ticket_code": ticket_code,
-                    "category": category,
-                    "location": location,
-                    "priority": priority,
-                    "status": "NEW",
-                    "issue_summary": summary
-                }).encode("utf-8"),
-                headers={
-                    "apikey": self.key,
-                    "Authorization": f"Bearer {self.key}",
-                    "Content-Type": "application/json",
-                    "Prefer": "return=representation"
-                }
-            )
-            with urllib.request.urlopen(req, timeout=5) as resp:
-                res_data = json.loads(resp.read().decode("utf-8"))
-                return res_data[0] if isinstance(res_data, list) and res_data else payload
-        except Exception as e:
-            print(f"Supabase Create Ticket Warning: {e}")
-            return payload
-
-    def _fallback_tickets(self):
-        return [
-            {"ticket_code": "CF-1042", "category": "wifi", "location": "Hostel B", "priority": "HIGH", "status": "ASSIGNED", "issue_summary": "Wi-Fi access point AP-HB-04 degraded"},
-            {"ticket_code": "CF-1041", "category": "login", "location": "Academic A", "priority": "MEDIUM", "status": "RESOLVED", "issue_summary": "SSO portal authentication reset"},
-            {"ticket_code": "CF-1039", "category": "printer", "location": "Central Library", "priority": "LOW", "status": "ESCALATED", "issue_summary": "Printer paper jam hardware error"}
-        ]
+    def run_autonomous_agent(self, session_id: str, email: str, role: str, query: str, location: Optional[str] = None, inject_fault: bool = False) -> Optional[Dict[str, Any]]:
+        """Executes full autonomous agent state machine inside Supabase via fn_run_autonomous_agent RPC."""
+        return self._call_rpc("fn_run_autonomous_agent", {
+            "p_session_id": session_id,
+            "p_user_email": email,
+            "p_user_role": role,
+            "p_query": query,
+            "p_user_location": location,
+            "p_inject_fault": inject_fault
+        })
 
     def _fallback_digital_twin(self):
         return [
