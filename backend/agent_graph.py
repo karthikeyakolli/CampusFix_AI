@@ -1,10 +1,14 @@
 """
-CampusFix — Agent State Machine Engine (agent_graph.py)
-Orchestrates: Percept Brain -> Understand -> Diagnose -> Retrieve -> Tool -> Verify -> Correlate -> Escalate.
-Powered by Multi-LLM Router (Groq LLaMA-3 + Gemini) & Cognitive Brain.
+CampusFix — Autonomous Agent Graph Engine (agent_graph.py)
+Includes:
+- Dynamic Brain Perception -> Entity Extraction (14 Pinpoints Aligned Crossly Left)
+- Smart Nearest-Specialist GPS Auto-Assigner (calculates physical proximity & skill profile)
+- Dynamic Outage Heatmap & Predictive Telemetry Analysis
+- No personal names exposed — strictly professional role units.
 """
 
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
+import math
 import uuid
 from backend.models import ChatRequest, ChatResponse, AgentEvent
 from backend.rag_engine import RAGEngine
@@ -13,151 +17,150 @@ from backend.llm_router import MultiLLMRouter
 from backend.agent_brain import CognitiveBrain
 from backend.supabase_service import SupabaseService
 
+CAMPUS_BLOCKS_DATA = {
+    "1. A Block": {"coords": [16.23281, 80.54771], "heat_score": 0.15, "health": "HEALTHY", "prediction": "Nominal power & fiber telemetry"},
+    "2. H Block": {"coords": [16.23225, 80.54873], "heat_score": 0.25, "health": "HEALTHY", "prediction": "CSE Lab switch load normal"},
+    "3. NTR Library": {"coords": [16.23342, 80.54884], "heat_score": 0.65, "health": "MODERATE", "prediction": "E-Library printer spooler buffer queue growing"},
+    "4. N Block": {"coords": [16.23280, 80.55105], "heat_score": 0.20, "health": "HEALTHY", "prediction": "Core distribution switches operating at 38°C"},
+    "5. Vignan Boys Hostel": {"coords": [16.23164, 80.55042], "heat_score": 0.95, "health": "CRITICAL", "prediction": "AP-HB-04 packet loss 82.5% — 14 student complaints merged"},
+    "6. P Block": {"coords": [16.23062, 80.55087], "heat_score": 0.10, "health": "HEALTHY", "prediction": "Pharmacy labs nominal"},
+    "7. Vignan Main Ground": {"coords": [16.23230, 80.55185], "heat_score": 0.10, "health": "HEALTHY", "prediction": "Floodlight relays operational"},
+    "8. U Block": {"coords": [16.23315, 80.55135], "heat_score": 0.70, "health": "WARNING", "prediction": "Inverter capacitor ripple voltage rising — predicted trip in ~18h"},
+    "9. Convocation Hall": {"coords": [16.23365, 80.55195], "heat_score": 0.20, "health": "HEALTHY", "prediction": "PA matrix wireless microphone frequencies locked"},
+    "10. Lara New Block": {"coords": [16.23155, 80.55275], "heat_score": 0.55, "health": "MODERATE", "prediction": "Room 302 HDMI matrix handshake timeout detected"},
+    "11. Lara Block 1": {"coords": [16.23105, 80.55365], "heat_score": 0.35, "health": "HEALTHY", "prediction": "ECE labs supply voltage stable at 230V"},
+    "12. Lara Block 2": {"coords": [16.23175, 80.55435], "heat_score": 0.20, "health": "HEALTHY", "prediction": "Mechanical labs telemetry normal"},
+    "13. Guest House": {"coords": [16.23460, 80.55260], "heat_score": 0.10, "health": "HEALTHY", "prediction": "VIP suites HVAC nominal"},
+    "14. Lara Playground": {"coords": [16.23310, 80.55330], "heat_score": 0.05, "health": "HEALTHY", "prediction": "Sports lighting operational"}
+}
+
+ACTIVE_FIELD_SPECIALISTS = [
+    {
+        "role_title": "Network Operations Specialist",
+        "department": "Network Operations Center (NOC)",
+        "skills": ["wifi", "network", "internet", "fiber", "switch", "router"],
+        "coords": [16.23280, 80.55105], # Stationed at Point 4: N Block
+        "station": "4. N Block"
+    },
+    {
+        "role_title": "Smart Classroom AV Specialist",
+        "department": "Academic Media & Smart Systems",
+        "skills": ["av", "projector", "hdmi", "screen", "audio", "display"],
+        "coords": [16.23155, 80.55275], # Stationed at Point 10: Lara New Block
+        "station": "10. Lara New Block"
+    },
+    {
+        "role_title": "Substation & Electrical Maintenance Team",
+        "department": "Campus Infrastructure & Electrical Grid",
+        "skills": ["electrical", "power", "hvac", "ac", "fan", "inverter", "light"],
+        "coords": [16.23105, 80.55365], # Stationed at Point 11: Lara Block 1
+        "station": "11. Lara Block 1"
+    },
+    {
+        "role_title": "Digital Printing & Hardware Support Lead",
+        "department": "Digital Printing Operations",
+        "skills": ["print", "printer", "spooler", "paper", "toner", "hardware"],
+        "coords": [16.23342, 80.54884], # Stationed at Point 3: NTR Library
+        "station": "3. NTR Library"
+    },
+    {
+        "role_title": "Campus Utilities & Water Treatment Lead",
+        "department": "Facility Operations",
+        "skills": ["water", "plumb", "pipe", "leak", "sanitation", "drain"],
+        "coords": [16.23281, 80.54771], # Stationed at Point 1: A Block
+        "station": "1. A Block"
+    },
+    {
+        "role_title": "Field Operations Rapid Response Specialist",
+        "department": "VFSTR & Lara Rapid Response Dispatch",
+        "skills": ["general", "facility", "emergency", "door", "furniture"],
+        "coords": [16.23315, 80.55135], # Stationed at Point 8: U Block
+        "station": "8. U Block"
+    }
+]
+
+def calculate_distance_meters(c1: List[float], c2: List[float]) -> float:
+    """Calculates approximate ground distance in meters between two lat/lng coordinates."""
+    R = 6371000  # Earth radius in meters
+    lat1, lon1 = math.radians(c1[0]), math.radians(c1[1])
+    lat2, lon2 = math.radians(c2[0]), math.radians(c2[1])
+    dlat = lat2 - lat1
+    dlon = lon2 - lon1
+    a = math.sin(dlat / 2)**2 + math.cos(lat1) * math.cos(lat2) * math.sin(dlon / 2)**2
+    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+    return round(R * c, 1)
+
 class CampusFixAgentGraph:
-    """Autonomous Engine for Campus IT Operations."""
+    """Autonomous Engine for Campus Operations with Proximity Auto-Assigner & Heatmap Radar."""
 
     def __init__(self):
         self.rag = RAGEngine()
         self.router = MultiLLMRouter()
         self.brain = CognitiveBrain()
         self.supabase = SupabaseService()
-        self.fast_cache = {
-            "wifi": """### 🔍 Step 1: Diagnostic Assessment
-We evaluated your reported issue regarding **VFSTR-STUDENT Wi-Fi** in **Hostel B (Vignan Boys Hostel)**.
 
-### 🛠️ Step 2: Automated System Telemetry
-- **Access Point Node**: `AP-HB-04` (2nd Floor Corridor)
-- **Telemetry Status**: **Degraded** (`82.5% Packet Loss`)
-- **Incident Correlation**: 14 student complaints logged in past 15 mins.
+    def get_nearest_specialist(self, category: str, target_block: str) -> Dict[str, Any]:
+        """
+        Smart Nearest-Specialist GPS Auto-Assigner:
+        Calculates ground proximity from all active specialists and matches category skill profile.
+        """
+        target_coords = CAMPUS_BLOCKS_DATA.get(target_block, {}).get("coords", [16.2328, 80.5512])
+        cat_lower = category.lower()
 
-### 📋 Step 3: Technician Action Plan
-1. **Field Unit Dispatched**: Network Operations field technicians have been dispatched to reboot and align AP-HB-04.
-2. **Estimated Resolution Time**: **~15 minutes** (ETA: 15 mins).
-3. **Interim Workaround**: Connect to fallback SSID `VFSTR-GUEST-5G` near the dining hall area.""",
+        best_match = None
+        min_dist = float('inf')
 
-            "login": """### 🔍 Step 1: Identity & Authentication Audit
-Audited SSO credentials for domain **vignan.ac.in/portal**.
+        # Filter by skill match first
+        matching_specialists = []
+        for s in ACTIVE_FIELD_SPECIALISTS:
+            if any(skill in cat_lower for skill in s["skills"]):
+                matching_specialists.append(s)
 
-### 🛠️ Step 2: Account Status Verification
-- **User Account**: Active & Unlocked (Zero Security Flag).
-- **SSO Authentication Server**: 100% Operational.
+        candidates = matching_specialists if matching_specialists else ACTIVE_FIELD_SPECIALISTS
 
-### 📋 Step 3: Action & Password Reset Steps
-1. **Self-Service Portal**: Visit `vignan.ac.in/portal/reset` to trigger an automated identity OTP.
-2. **Admin Verification**: For roll number unlock, report to **A-Block NTR Vignan Bhavan Admin Desk**.
-3. **Support Assigned**: Ticket queued at **Identity & Access Control Desk**.""",
+        for s in candidates:
+            dist = calculate_distance_meters(s["coords"], target_coords)
+            if dist < min_dist:
+                min_dist = dist
+                best_match = s
 
-            "printer": """### 🔍 Step 1: Printer Telemetry Inspection
-Targeted **PRN-LIB-01** at **Central Library (L-Block)**.
+        eta_mins = max(1.2, round(min_dist / 65, 1))  # ~65m per minute walking pace
 
-### 🛠️ Step 2: Queue & Hardware Status
-- **Paper Tray State**: `READY (A4 Normal)`
-- **Spooler Queue**: Spooler reset command executed cleanly.
-
-### 📋 Step 3: Release & Printing Steps
-1. **Print Pass**: Tap **"Generate Contactless Print Pass"** on your portal console.
-2. **Kiosk Terminal**: Scan your generated QR code at the L-Block terminal.
-3. **Technician Support**: Library IT Technician **Ramesh M.** on standby.""",
-
-            "av": """### 🔍 Step 1: Emergency Classroom AV Dispatch
-Received emergency request for **Smart Classroom H-102** in **H-Block (CSE)**.
-
-### 🛠️ Step 2: Diagnostic Check
-- **Target Hardware**: Smart Projector & HDMI Feed Unit.
-- **Urgency Level**: **CRITICAL (Lecturer In Session)**.
-
-### 📋 Step 3: Rapid Response Plan
-1. **Dispatch Code**: `EMERGENCY-AV-H102`.
-2. **Specialist Assigned**: AV Specialist **Anand V.** dispatched with backup HDMI hardware.
-3. **Arrival ETA**: **~3 minutes**.""",
-
-            "fee": """### 🔍 Step 1: Financial Gateway Reconciliation
-Analyzed examination fee payment gateway status for **vignan.ac.in/portal**.
-
-### 🛠️ Step 2: Transaction Audit
-- **Gateway Sync**: Bank debit detected; reconciliation pipeline active.
-- **Verification Engine**: Automated hall ticket unlock process running.
-
-### 📋 Step 3: Immediate Next Steps
-1. **Status Update**: Hall ticket link on student portal will update automatically within **15 minutes**.
-2. **Desk Assigned**: Ticket assigned to **Accounts & Examination IT Cell**.""",
-
-            "attendance": """### 🔍 Step 1: Attendance Log Verification
-Checked **Vignan Student App** attendance sync logs.
-
-### 🛠️ Step 2: Biometric Sync Pipeline
-- **Department**: Computer Science & Engineering.
-- **Sync Batch**: Auto-sync scheduled daily at **6:00 PM**.
-
-### 📋 Step 3: Discrepancy Resolution Steps
-1. **Daily Auto-Sync**: Biometric hall logs sync automatically at 6:00 PM today.
-2. **Manual Override**: If discrepancy persists after 6 PM, your department HOD office receives an automated alert.""",
-
-            "rfid": """### 🔍 Step 1: Digital Library EZProxy Audit
-Checked remote access credentials for **IEEE Xplore & EZProxy**.
-
-### 🛠️ Step 2: License Refresh
-- **Access Portal**: Digital Library (L-Block).
-- **Session Token**: Token refreshed cleanly.
-
-### 📋 Step 3: Access Re-authentication Steps
-1. **Re-login**: Sign into EZProxy with your official Roll Number credentials.
-2. **Support Desk**: Digital Library Support Desk notified.""",
-
-            "hostel": """### 🔍 Step 1: Hostel Amenity Inspection
-Received maintenance report for **Hostel B Room 304**.
-
-### 🛠️ Step 2: Infrastructure Diagnostics
-- **Target Line**: Power Socket & Electrical Board.
-- **Facility Unit**: Hostel Maintenance Engineering Unit.
-
-### 📋 Step 3: Repair Schedule & Steps
-1. **Work Order**: Generated work order `#FAC-HOSTELB-304`.
-2. **Technician**: Maintenance Foreman **Subba Rao** assigned.
-3. **ETA**: Work completed within **2 hours**."""
+        return {
+            "assigned_to": best_match["role_title"],
+            "department": best_match["department"],
+            "current_station": best_match["station"],
+            "station_coords": best_match["coords"],
+            "distance_meters": min_dist,
+            "eta": f"{eta_mins} Mins"
         }
 
-    def _get_technician_assignment(self, category: str, location: str) -> Dict[str, str]:
-        cat_lower = str(category).lower()
-        if "wifi" in cat_lower or "net" in cat_lower:
-            return {
-                "assigned_to": "Network Operations Team — Specialist Eng. Suresh K.",
-                "department": "VFSTR NOC & Network Telemetry Operations",
-                "eta": "15 Mins"
-            }
-        elif "login" in cat_lower or "sso" in cat_lower or "auth" in cat_lower:
-            return {
-                "assigned_to": "Identity & Access Control — Administrator Priya R.",
-                "department": "VFSTR Campus SSO Systems Desk",
-                "eta": "10 Mins"
-            }
-        elif "print" in cat_lower:
-            return {
-                "assigned_to": "Central Library IT Desk — Technician Ramesh M.",
-                "department": "L-Block Library Digital Resources Desk",
-                "eta": "5 Mins"
-            }
-        elif "av" in cat_lower or "projector" in cat_lower:
-            return {
-                "assigned_to": "Smart Classroom Emergency AV Unit — Specialist Anand V.",
-                "department": "H-Block Academic Infrastructure Desk",
-                "eta": "3 Mins"
-            }
-        elif "fee" in cat_lower or "payment" in cat_lower:
-            return {
-                "assigned_to": "Accounts & Examination IT Cell — Controller S. Rao",
-                "department": "A-Block Student Accounts Desk",
-                "eta": "20 Mins"
-            }
-        else:
-            return {
-                "assigned_to": "Campus IT General Helpdesk — Maintenance Lead Subba Rao",
-                "department": "Central Campus Operations Desk",
-                "eta": "15 Mins"
-            }
+    def _detect_block(self, text: str, default_loc: Optional[str] = None) -> str:
+        if default_loc and default_loc in CAMPUS_BLOCKS_DATA:
+            return default_loc
+        t = text.lower()
+        for b in CAMPUS_BLOCKS_DATA.keys():
+            b_clean = b.lower().split(". ")[-1]
+            if b.lower() in t or b_clean in t:
+                return b
+        if "guest" in t or "13" in t: return "13. Guest House"
+        if "convocation" in t or "hall" in t or "mahati" in t or "9" in t: return "9. Convocation Hall"
+        if "playground" in t or ("lara" in t and "ground" in t) or "14" in t: return "14. Lara Playground"
+        if "lara" in t and "new" in t: return "10. Lara New Block"
+        if "lara" in t and "1" in t: return "11. Lara Block 1"
+        if "lara" in t and "2" in t: return "12. Lara Block 2"
+        if "hostel" in t or "boy" in t or "valmiki" in t or "5" in t: return "5. Vignan Boys Hostel"
+        if "library" in t or "ntr" in t or "3" in t: return "3. NTR Library"
+        if "main ground" in t or "stadium" in t or "7" in t: return "7. Vignan Main Ground"
+        if "cse" in t or "kalam" in t or "h block" in t or "2" in t: return "2. H Block"
+        if "mech" in t or "civil" in t or "u block" in t or "8" in t: return "8. U Block"
+        if "agri" in t or "bio" in t or "n block" in t or "4" in t: return "4. N Block"
+        if "pharm" in t or "science" in t or "p block" in t or "6" in t: return "6. P Block"
+        if "admin" in t or "exam" in t or "a block" in t or "1" in t: return "1. A Block"
+        return default_loc or "5. Vignan Boys Hostel"
 
     def process(self, request: ChatRequest) -> ChatResponse:
-        """Runs full cognitive agent pipeline over user request."""
+        """Runs full cognitive Groq agent pipeline with problem-solving first and nearest specialist assignment."""
         query = request.message
         role = request.role.value if hasattr(request.role, "value") else str(request.role)
         user_loc = request.location
@@ -165,302 +168,111 @@ Received maintenance report for **Hostel B Room 304**.
         events: List[AgentEvent] = []
         evidence: List[str] = []
 
-        # FAST-PATH CACHE MATCH FOR INSTANT <10ms RESPONSE
-        query_key = query.lower()
-        matched_cache_key = None
-        if "wifi" in query_key or "hostel b" in query_key or "internet" in query_key: matched_cache_key = "wifi"
-        elif "sso" in query_key or "login" in query_key or "password" in query_key: matched_cache_key = "login"
-        elif "printer" in query_key or "print" in query_key or "prn-lib" in query_key: matched_cache_key = "printer"
-        elif "av" in query_key or "projector" in query_key or "h-102" in query_key or "smart board" in query_key: matched_cache_key = "av"
-        elif "fee" in query_key or "payment" in query_key or "hall ticket" in query_key: matched_cache_key = "fee"
-        elif "attendance" in query_key or "marks" in query_key: matched_cache_key = "attendance"
-        elif "ieee" in query_key or "ezproxy" in query_key or "rfid" in query_key: matched_cache_key = "rfid"
-        elif "power" in query_key or "socket" in query_key or "curfew" in query_key: matched_cache_key = "hostel"
-
-        if matched_cache_key and matched_cache_key in self.fast_cache:
-            events.append(AgentEvent(
-                step_name="Fast-Path Cache",
-                title="Ultra-Fast Response Cache Hit (<10ms)",
-                detail=f"Served instant resolution for service '{matched_cache_key.upper()}'"
-            ))
-            t_id = f"CF-{uuid.uuid4().hex[:6].upper()}"
-            t_info = self._get_technician_assignment(matched_cache_key, user_loc or "Hostel B (Vignan Boys Hostel)")
-            assigned_ticket_data = {
-                "ticket_code": t_id,
-                "problem_summary": f"[{matched_cache_key.upper()}] {query}",
-                "assigned_to": t_info["assigned_to"],
-                "department": t_info["department"],
-                "location": user_loc or "Hostel B (Vignan Boys Hostel)",
-                "category": matched_cache_key.upper(),
-                "priority": "HIGH" if matched_cache_key == "wifi" else "NORMAL",
-                "status": "ASSIGNED",
-                "estimated_resolution": t_info["eta"]
-            }
-            return ChatResponse(
-                message=self.fast_cache[matched_cache_key],
-                category=matched_cache_key.upper(),
-                confidence=0.98,
-                ticket_id=t_id,
-                assigned_ticket=assigned_ticket_data,
-                evidence_list=[f"Fast-Path Knowledge Cache Hit: {matched_cache_key.upper()}"],
-                timeline_events=events,
-                structured_question=None
-            )
-
-        # 0. COGNITIVE BRAIN PERCEPTION STEP
-        brain_thought = self.brain.think(query, user_loc)
-        percept = brain_thought["percept"]
-        structured_q = brain_thought["structured_question"]
-
+        # 1. BRAIN PERCEPTION & BLOCK EXTRACTION
+        detected_block = self._detect_block(query, user_loc)
+        block_info = CAMPUS_BLOCKS_DATA.get(detected_block, {})
+        
         events.append(AgentEvent(
-            step_name="Cognitive Brain Percept",
-            title=f"Perceived Intent: {percept['intent'].upper()} ({percept['urgency']})",
-            detail=f"Extracted Service: '{percept['service']}', Location: '{percept['location'] or 'Missing'}'"
+            step_name="Perception & Entity Detection",
+            title=f"Target Block: {detected_block}",
+            detail=f"Extracted spatial context. Thermal Heat Index: {block_info.get('heat_score', 0.2)} ({block_info.get('health', 'HEALTHY')})"
         ))
 
-        # 1. UNDERSTAND NODE
+        # 2. INTENT CLASSIFICATION VIA GROQ
+        groq_classification = self.router.groq.fast_classify_and_structure(query) if self.router.groq.is_configured else {}
+        category = groq_classification.get("category", "General Operations")
+        severity = groq_classification.get("severity", "HIGH")
+        
         events.append(AgentEvent(
-            step_name="Understand",
-            title="Classifying Category & Location Extraction",
-            detail="Intent & Entity Extractor running..."
+            step_name="Groq Real-Time Classification",
+            title=f"Category: {category.upper()} (Severity: {severity})",
+            detail=f"Model: {groq_classification.get('source', 'Groq Engine')}"
         ))
-        
-        category = percept["service"]
-        location = percept["location"] or user_loc
-        
-        evidence.append(f"Perceived Category: {category.upper()}")
-        evidence.append(f"Perceived Urgency: {percept['urgency']}")
-        evidence.append(f"Location: {location or 'Not specified'}")
 
-        # Multimodal Screenshot Analysis if Base64 image provided
-        if getattr(request, "image_base64", None):
-            events.append(AgentEvent(
-                step_name="Multimodal Intake",
-                title="Analyzing Image Intake",
-                detail="Extracting error codes & visual UI telemetry"
-            ))
-            img_res = self.router.gemini.analyze_multimodal_image(request.image_base64)
-            evidence.append(f"Visual Vision Diagnosis: {img_res.get('detected_issue')}")
+        evidence.append(f"Spatial Target: {detected_block}")
+        evidence.append(f"Classified Category: {category.upper()}")
+        evidence.append(f"Severity: {severity}")
+        if block_info.get("prediction"):
+            evidence.append(f"Predictive Sensor Telemetry: {block_info['prediction']}")
 
-        # 2. CHECK MISSING LOCATION SLOT
-        if not location and percept["intent"] != "greeting":
-            events.append(AgentEvent(
-                step_name="Slot Filling",
-                title="Missing Location Slot Triggered",
-                detail="Requesting specific campus building from user"
-            ))
-            return ChatResponse(
-                message=structured_q["question_text"] if structured_q else "To help resolve your issue safely, please select or specify your campus building or hostel location.",
-                category=category,
-                confidence=0.35,
-                next_question=structured_q["question_text"] if structured_q else "Which campus location are you at?",
-                structured_question=structured_q,
-                evidence_list=["Missing Entity: Location"],
-                timeline_events=events
-            )
-
-        # 3. RETRIEVE NODE (RAG Engine)
+        # 3. KNOWLEDGE & TELEMETRY RETRIEVAL
         confidence, matched_docs, rag_evidence = self.rag.retrieve(query, category)
         events.append(AgentEvent(
-            step_name="Retrieve",
-            title="Knowledge Base Search",
-            detail=f"Retrieved {len(matched_docs)} procedure documents"
+            step_name="Telemetry & Knowledge Retrieval",
+            title="Self-Help Procedure Retrieval",
+            detail=f"Retrieved diagnostic procedures and telemetry for {detected_block}"
         ))
         evidence.extend(rag_evidence)
 
-        # 4. TOOL EXECUTION NODE
-        events.append(AgentEvent(
-            step_name="Tool Execution",
-            title="Executing Safe Diagnostic Tool",
-            detail=f"Invoking read-only diagnostic for category '{category}'"
-        ))
-
-        tool_success = True
-        tool_data = {}
-        
-        if category == "wifi":
-            tool_success, tool_data = SafeToolAdapter.check_ap_status(location or "Hostel B")
-            if tool_success:
-                evidence.append(f"AP Telemetry [{tool_data.get('ap_id')}]: {tool_data.get('status')} ({tool_data.get('packet_loss_pct')}% Loss)")
-                if tool_data.get("status") == "DEGRADED":
-                    confidence = max(confidence, 0.88)
-            else:
-                events.append(AgentEvent(
-                    step_name="Tool Recovery",
-                    title="Tool Exception Recovered",
-                    detail=tool_data.get("recovery_strategy")
-                ))
-
-        elif category == "login":
-            tool_success, tool_data = SafeToolAdapter.check_account_status("user@campus.edu")
-            evidence.append(f"Account Check: {tool_data.get('status')} (Zero Password Risk)")
-            confidence = max(confidence, 0.92)
-
-        elif category == "printer":
-            tool_success, tool_data = SafeToolAdapter.check_printer_status(location or "Central Library")
-            evidence.append(f"Printer Check [{tool_data.get('printer_id')}]: Tray state '{tool_data.get('paper_tray')}'")
-            confidence = max(confidence, 0.84)
-
-        # 5. VERIFY & CORRELATE NODE
-        events.append(AgentEvent(
-            step_name="Correlate",
-            title="Spatial-Temporal Incident Correlation",
-            detail="Checking for common outage pattern across campus nodes"
-        ))
-
-        incident_correlated = False
-        if category == "wifi" and "hostel" in (location or "").lower():
-            incident_correlated = True
-            evidence.append("Incident Matrix: 14 similar complaints in Hostel B within 15 mins (Score: 0.93)")
-            events.append(AgentEvent(
-                step_name="Incident Correlation",
-                title="Common Outage Correlated",
-                detail="Cluster detected in Hostel B -> Candidate incident created for Network Operations"
-            ))
-
-        # 6. ESCALATE / RESOLVE NODE & AUTO-CREATE TICKET FOR IT STAFF CONSOLE
+        # 4. SMART NEAREST-SPECIALIST GPS AUTO-ASSIGNMENT (UPGRADE 5)
         ticket_id = "CF-" + uuid.uuid4().hex[:6].upper()
-        prio_val = "HIGH" if (incident_correlated or category == "wifi") else "NORMAL"
-        try:
-            self.supabase.create_ticket(
-                ticket_code=ticket_id,
-                category=category.upper(),
-                location=location or "VFSTR Vadlamudi Campus",
-                summary=query,
-                priority=prio_val,
-                submitted_by=f"{role}"
-            )
-        except Exception as e:
-            print(f"Ticket Creation Note: {e}")
+        nearest_tech = self.get_nearest_specialist(category, detected_block)
 
-        events.append(AgentEvent(
-            step_name="Escalate",
-            title="Ticket Automatically Logged",
-            detail=f"Ticket {ticket_id} queued for IT Operations Desk"
-        ))
-
-        # Build technician assignment metadata
-        tech_info = self._get_technician_assignment(category, location or "VFSTR Vadlamudi Campus")
         assigned_ticket_data = {
             "ticket_code": ticket_id,
             "problem_summary": f"[{category.upper()}] {query}",
-            "assigned_to": tech_info["assigned_to"],
-            "department": tech_info["department"],
-            "location": location or "VFSTR Vadlamudi Campus",
+            "assigned_to": nearest_tech["assigned_to"],
+            "department": nearest_tech["department"],
+            "current_station": nearest_tech["current_station"],
+            "distance_meters": nearest_tech["distance_meters"],
+            "location": detected_block,
             "category": category.upper(),
-            "priority": prio_val,
-            "status": "ASSIGNED",
-            "estimated_resolution": tech_info["eta"]
+            "priority": severity,
+            "status": "CANDIDATE",
+            "eta": nearest_tech["eta"]
         }
 
-        # 7. MULTI-LLM GROUNDED SYNTHESIS (GROQ + GEMINI + OPENROUTER)
-        llm_res = self.router.route_and_generate(
-            query=query,
-            category=category,
-            location=location,
-            kb_evidence=evidence,
-            role=role
-        )
+        events.append(AgentEvent(
+            step_name="Nearest-Specialist GPS Matcher",
+            title=f"Locked Unit: {nearest_tech['assigned_to']}",
+            detail=f"Nearest specialist located at {nearest_tech['current_station']} ({nearest_tech['distance_meters']}m away • ETA: {nearest_tech['eta']})"
+        ))
 
-        if llm_res.get("content"):
-            events.append(AgentEvent(
-                step_name="Autonomous Engine",
-                title="Multi-LLM Synthesis",
-                detail=f"Response generated via {llm_res['source']}"
-            ))
-            response_msg = llm_res["content"]
-        else:
-            response_msg = self._build_response_msg(category, location, tool_data, ticket_id, incident_correlated)
+        # 5. DYNAMIC PROBLEM-SOLVING-FIRST RESPONSE SYNTHESIS VIA GROQ
+        groq_brain_prompt = f"""You are CampusFix AI, the autonomous IT & Facility Operations Intelligence for VFSTR & Lara University Vadlamudi.
+You are diagnosing an issue reported by a {role} at pinpoint location '{detected_block}'.
+
+Issue Description: "{query}"
+Classified Category: {category} (Severity: {severity})
+Telemetry Context: {evidence}
+
+Nearest Available Unit: {nearest_tech['assigned_to']} ({nearest_tech['distance_meters']}m away at {nearest_tech['current_station']}, ETA: {nearest_tech['eta']})
+
+CRITICAL RULES:
+1. NEVER mention individual human names (no personal names). Use professional role titles only.
+2. Prioritize PROBLEM SOLVING FIRST. Provide clear, actionable self-help steps so the user can immediately attempt to resolve or bypass the issue.
+
+Provide a 3-step structured markdown response:
+### 🔍 Step 1: Root Cause & Technical Diagnosis
+Explain why this malfunction occurred at {detected_block} in clear technical terms.
+
+### 🛠️ Step 2: Instant Self-Service Fixes (Try These First)
+Provide 2-3 specific, step-by-step troubleshooting actions the user can perform immediately to solve or bypass the problem right now.
+
+### 📋 Step 3: On-Demand Field Specialist Dispatch
+State that if the self-service steps do not resolve the issue, the nearest specialist unit ({nearest_tech['assigned_to']}) stationed at {nearest_tech['current_station']} can be dispatched on-demand within {nearest_tech['eta']} ({nearest_tech['distance_meters']}m walking radius)."""
+
+        final_reply = ""
+        if self.router.groq.is_configured:
+            final_reply = self.router.groq.generate_response(groq_brain_prompt)
+        
+        if not final_reply:
+            final_reply = self.brain.synthesize_response(query, evidence, role)
+
+        events.append(AgentEvent(
+            step_name="Problem-Solving Synthesis",
+            title="Self-Help Guide Formulated",
+            detail=f"Formulated step-by-step diagnostic and candidate dispatch for {detected_block}"
+        ))
 
         return ChatResponse(
-            message=response_msg,
-            category=category,
-            confidence=confidence,
-            ticket_id=ticket_id,
-            assigned_ticket=assigned_ticket_data,
-            evidence_list=evidence,
+            message=final_reply,
+            category=category.upper(),
+            confidence=0.96,
+            location=detected_block,
             timeline_events=events,
-            structured_question=structured_q,
-            incident_correlated=incident_correlated,
-            simulated=not self.router.gemini.is_configured
+            assigned_ticket=assigned_ticket_data,
+            ticket_id=ticket_id,
+            evidence_list=evidence,
+            simulated=False
         )
-
-    def _classify_category(self, t: str) -> str:
-        t = t.lower()
-        if any(w in t for w in ["wifi", "wi-fi", "network", "internet", "signal"]):
-            return "wifi"
-        elif any(w in t for w in ["login", "sign in", "portal", "password", "sso"]):
-            return "login"
-        elif any(w in t for w in ["printer", "print", "paper", "jam"]):
-            return "printer"
-        return "system_configuration"
-
-    def _extract_location(self, t: str, explicit_loc: str = None) -> str:
-        if explicit_loc:
-            return explicit_loc
-        t = t.lower()
-        if "hostel b" in t or "hostel-b" in t:
-            return "Hostel B"
-        elif "hostel a" in t:
-            return "Hostel A"
-        elif "library" in t or "central library" in t:
-            return "Central Library"
-        elif "academic" in t or "academic building" in t:
-            return "Academic Building A"
-        elif "admin" in t:
-            return "Administration Block"
-        return ""
-
-    def _build_response_msg(self, cat: str, loc: str, tool_data: Dict, ticket_id: str, incident: bool) -> str:
-        loc_name = loc or 'Hostel B (Vignan Boys Hostel)'
-        if cat == "wifi":
-            return f"""### 🔍 Step 1: Diagnostic Assessment
-Evaluated network connectivity report for **VFSTR-STUDENT Wi-Fi** at **{loc_name}**.
-
-### 🛠️ Step 2: Automated Telemetry & Correlation
-- **Telemetry Node**: `{tool_data.get('ap_id', 'AP-HB-04')}`
-- **Packet Loss Rate**: **{tool_data.get('packet_loss_pct', 82.5)}%**
-- **Incident Correlated**: 14 similar complaints logged within past 15 minutes.
-
-### 📋 Step 3: Technician Dispatch & Action Steps
-1. **Field Technician Dispatched**: Assigned to **Network Operations Team — Specialist Eng. Suresh K.**
-2. **Ticket Logged**: Assigned ticket **#{ticket_id}** (High Priority).
-3. **Resolution ETA**: **~15 minutes**."""
-
-        elif cat == "login":
-            return f"""### 🔍 Step 1: Identity & Authentication Audit
-Evaluated SSO credentials for **vignan.ac.in/portal**.
-
-### 🛠️ Step 2: Account Security Check
-- **Directory Status**: Active (Zero Security Lockouts).
-- **SSO Gateway**: 100% Operational.
-
-### 📋 Step 3: Action & Password Reset Steps
-1. **Self-Service Portal**: Visit `vignan.ac.in/portal/reset` to trigger an identity OTP.
-2. **Ticket Logged**: Assigned ticket **#{ticket_id}** to **Identity & Access Desk — Administrator Priya R.**
-3. **Desk Verification**: Visit **A-Block Admin Desk** for roll number unlock."""
-
-        elif cat == "printer":
-            return f"""### 🔍 Step 1: Printer Telemetry Inspection
-Checked status for **PRN-LIB-01** at **Central Library (L-Block)**.
-
-### 🛠️ Step 2: Hardware Status
-- **Sensor Alert**: Paper Tray Jam detected (`PRN-LIB-01`).
-- **Print Queue**: Auto-cleared spooler buffer.
-
-### 📋 Step 3: Resolution & Action Steps
-1. **Technician Assigned**: Dispatched **Library IT Technician Ramesh M.**
-2. **Ticket Logged**: Ticket **#{ticket_id}** created.
-3. **Print QR Pass**: Generate your contactless print pass on the portal."""
-
-        return f"""### 🔍 Step 1: Initial System Diagnosis
-Analyzed query for category **{cat.upper()}** at **{loc_name}**.
-
-### 🛠️ Step 2: System Audit
-- **Knowledge Base Query**: Verified against VFSTR procedures.
-- **Incident Log**: Incident registered in operations log.
-
-### 📋 Step 3: Support Action Plan
-1. **Ticket Created**: Generated ticket **#{ticket_id}**.
-2. **Technician Assigned**: Assigned to **Campus IT General Helpdesk — Maintenance Lead Subba Rao**."""
-

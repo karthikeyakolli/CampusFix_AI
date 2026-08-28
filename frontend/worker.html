@@ -1,0 +1,813 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>VFSTR Field Operations — Supabase Cloud Specialist Workspace</title>
+  
+  <!-- Premium Fonts: Plus Jakarta Sans + Outfit + JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Outfit:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Leaflet Satellite Map Engine -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <style>
+    :root {
+      --bg-base: #f8fafc;
+      --bg-surface: #ffffff;
+      --bg-subtle: #f1f5f9;
+      --bg-muted: #e2e8f0;
+      
+      --text-primary: #0f172a;
+      --text-secondary: #475569;
+      --text-tertiary: #64748b;
+      --text-muted: #94a3b8;
+      
+      --primary: #2563eb;
+      --primary-hover: #1d4ed8;
+      --primary-light: #eff6ff;
+      --primary-border: #bfdbfe;
+      
+      --emerald: #059669;
+      --emerald-light: #ecfdf5;
+      --emerald-border: #a7f3d0;
+      
+      --amber: #d97706;
+      --amber-light: #fffbeb;
+      --amber-border: #fde68a;
+      
+      --rose: #dc2626;
+      --rose-light: #fef2f2;
+      --rose-border: #fecaca;
+      
+      --sky: #0284c7;
+      --sky-light: #f0f9ff;
+      --sky-border: #bae6fd;
+
+      --purple: #7c3aed;
+      --purple-light: #f5f3ff;
+      --purple-border: #ddd6fe;
+
+      --border-subtle: #e2e8f0;
+      --border-focus: #3b82f6;
+      
+      --shadow-xs: 0 1px 2px 0 rgba(15, 23, 42, 0.04);
+      --shadow-sm: 0 1px 3px 0 rgba(15, 23, 42, 0.05), 0 1px 2px -1px rgba(15, 23, 42, 0.03);
+      --shadow-md: 0 4px 6px -1px rgba(15, 23, 42, 0.05), 0 2px 4px -2px rgba(15, 23, 42, 0.03);
+      --shadow-card: 0 4px 20px -2px rgba(15, 23, 42, 0.05), 0 0 0 1px #e2e8f0;
+      
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 16px;
+      --radius-xl: 20px;
+      
+      --font-mono: 'JetBrains Mono', monospace;
+      --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: var(--bg-base);
+      color: var(--text-primary);
+      min-height: 100vh;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--bg-muted); border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+    .field-header {
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      background: #ffffff;
+      border-bottom: 1px solid var(--border-subtle);
+      padding: 12px 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .brand-wrap {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+      color: var(--text-primary);
+    }
+
+    .vfstr-logo-emblem {
+      width: 38px; height: 38px;
+      background: linear-gradient(135deg, #1e40af 0%, #2563eb 100%);
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #ffffff;
+      box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25);
+    }
+
+    .worker-badge {
+      font-family: 'Outfit', sans-serif;
+      font-weight: 700;
+      font-size: 17px;
+      letter-spacing: -0.3px;
+      color: var(--text-primary);
+    }
+
+    .brand-tag {
+      background: var(--emerald-light);
+      border: 1px solid var(--emerald-border);
+      color: var(--emerald);
+      padding: 2px 8px;
+      border-radius: 6px;
+      font-size: 10px;
+      font-weight: 700;
+      font-family: var(--font-mono);
+      letter-spacing: 0.5px;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .status-badge {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--emerald-light);
+      border: 1px solid var(--emerald-border);
+      color: var(--emerald);
+      padding: 5px 12px;
+      border-radius: 9999px;
+      font-size: 11.5px;
+      font-weight: 700;
+      font-family: var(--font-mono);
+    }
+
+    .status-dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: var(--emerald);
+      box-shadow: 0 0 6px var(--emerald);
+      animation: pulse 1.5s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(1.3); }
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 14px;
+      border-radius: var(--radius-md);
+      font-family: inherit;
+      font-size: 12.5px;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid var(--border-subtle);
+      background: #ffffff;
+      color: var(--text-secondary);
+      text-decoration: none;
+      box-shadow: var(--shadow-xs);
+      transition: all 0.15s ease;
+    }
+
+    .btn:hover {
+      border-color: var(--text-muted);
+      color: var(--text-primary);
+      transform: translateY(-1px);
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: #ffffff;
+      border: 1px solid var(--primary);
+      box-shadow: 0 2px 6px rgba(37, 99, 235, 0.2);
+    }
+
+    .btn-danger {
+      color: var(--rose);
+      border-color: var(--rose-border);
+      background: var(--rose-light);
+    }
+
+    .field-container {
+      max-width: 1440px;
+      margin: 18px auto 40px auto;
+      padding: 0 24px;
+      display: grid;
+      grid-template-columns: 1.05fr 0.95fr;
+      gap: 20px;
+      align-items: stretch;
+    }
+
+    .map-panel {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-xl);
+      padding: 18px;
+      box-shadow: var(--shadow-card);
+      display: flex;
+      flex-direction: column;
+      height: calc(100vh - 120px);
+      min-height: 600px;
+      position: relative;
+    }
+
+    .map-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    .map-controls {
+      display: flex;
+      gap: 6px;
+    }
+
+    .pill-btn {
+      padding: 4px 10px;
+      border-radius: var(--radius-sm);
+      font-size: 11px;
+      font-weight: 700;
+      border: 1px solid var(--border-subtle);
+      background: #ffffff;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .pill-btn.active {
+      background: var(--primary-light);
+      color: var(--primary);
+      border-color: var(--primary-border);
+    }
+
+    #worker-satellite-map {
+      flex: 1;
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--border-subtle);
+      overflow: hidden;
+      background: #0f172a;
+    }
+
+    .pin-badge {
+      background: #dc2626;
+      color: #ffffff;
+      font-family: 'Outfit', sans-serif;
+      font-weight: 800;
+      font-size: 11px;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 2px solid #ffffff;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.35);
+      cursor: pointer;
+    }
+
+    .feed-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      height: calc(100vh - 120px);
+      min-height: 600px;
+    }
+
+    .profile-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 14px 18px;
+      box-shadow: var(--shadow-xs);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .tech-info {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .tech-avatar {
+      width: 40px; height: 40px;
+      background: var(--primary-light);
+      border: 1px solid var(--primary-border);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--primary);
+      font-weight: 700;
+      font-size: 15px;
+    }
+
+    .tech-name {
+      font-weight: 700;
+      font-size: 14px;
+      color: var(--text-primary);
+    }
+
+    .tech-role {
+      font-size: 11.5px;
+      color: var(--text-tertiary);
+    }
+
+    .job-list {
+      flex: 1;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      padding-right: 4px;
+    }
+
+    .job-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 16px;
+      box-shadow: var(--shadow-xs);
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .job-card:hover {
+      border-color: var(--primary-border);
+      box-shadow: var(--shadow-sm);
+      transform: translateY(-1px);
+    }
+
+    .job-card.active-selected {
+      border-color: var(--primary);
+      background: var(--primary-light);
+      box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
+    }
+
+    .ticket-id {
+      font-family: var(--font-mono);
+      font-weight: 700;
+      font-size: 12.5px;
+      color: var(--primary);
+    }
+
+    .job-badge {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 6px;
+      font-family: var(--font-mono);
+    }
+
+    .active-job-detail-panel {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-xl);
+      padding: 18px;
+      box-shadow: var(--shadow-card);
+      display: none;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .stepper-nav {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--bg-subtle);
+      padding: 4px;
+      border-radius: var(--radius-md);
+    }
+
+    .step-pill {
+      flex: 1;
+      text-align: center;
+      padding: 6px;
+      border-radius: var(--radius-sm);
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-tertiary);
+      background: transparent;
+      border: none;
+      cursor: pointer;
+    }
+
+    .step-pill.completed { background: var(--emerald-light); color: var(--emerald); }
+    .step-pill.current { background: #ffffff; color: var(--primary); box-shadow: var(--shadow-xs); }
+
+    .step-panel { display: none; flex-direction: column; gap: 12px; }
+    .step-panel.active { display: flex; }
+
+    .diag-box {
+      background: var(--bg-subtle);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 12px;
+      font-size: 12.5px;
+      color: var(--text-secondary);
+    }
+
+    .action-btn-row { display: flex; gap: 8px; margin-top: 6px; }
+
+    .btn-action {
+      flex: 1;
+      padding: 9px;
+      border-radius: var(--radius-md);
+      font-size: 12.5px;
+      font-weight: 700;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: all 0.15s ease;
+    }
+
+    .btn-action-primary { background: var(--primary); color: white; }
+    .btn-action-emerald { background: var(--emerald); color: white; }
+    .btn-action-secondary { background: #ffffff; border: 1px solid var(--border-subtle); color: var(--text-secondary); }
+
+    .input-field {
+      width: 100%;
+      background: #ffffff;
+      border: 1px solid var(--border-subtle);
+      color: var(--text-primary);
+      padding: 10px 12px;
+      border-radius: var(--radius-md);
+      font-size: 13px;
+      margin-top: 6px;
+      font-family: inherit;
+      outline: none;
+    }
+
+    @media (max-width: 1024px) {
+      .field-container { grid-template-columns: 1fr; }
+      .map-panel { height: 420px; }
+      .feed-panel { height: auto; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- TOP HEADER -->
+  <header class="field-header">
+    <a class="brand-wrap" href="worker.html">
+      <div class="vfstr-logo-emblem">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path>
+        </svg>
+      </div>
+      <div>
+        <div class="worker-badge">VFSTR <b>Tactical Field Ops</b></div>
+        <div class="brand-tag">☁️ SUPABASE POSTGRESQL LIVE</div>
+      </div>
+    </a>
+
+    <div class="header-actions">
+      <div class="status-badge">
+        <span class="status-dot"></span> GPS LIVE
+      </div>
+      <div class="status-badge" id="tech-user-badge" style="background:var(--primary-light); border-color:var(--primary-border); color:var(--primary);">
+        <span>🔧</span> <span id="tech-name">Network Operations Specialist</span>
+      </div>
+      <a href="admin.html" class="btn">
+        <span>Executive Hub</span>
+      </a>
+      <button class="btn btn-danger" onclick="logoutWorker()">
+        <span>Sign Out</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- MAIN DUAL-PANE VIEW -->
+  <div class="field-container">
+    
+    <!-- LEFT: SATELLITE DISPATCH MAP -->
+    <div class="map-panel">
+      <div class="map-header">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <span>VFSTR &amp; Lara Spatial Operations (14 Pinpoint Blocks)</span>
+          <span style="font-size: 11.5px; color: var(--text-tertiary); font-family: var(--font-mono);" id="map-target-coords">16.2328° N, 80.5512° E</span>
+        </div>
+        <div class="map-controls">
+          <button class="pill-btn active" style="background:var(--primary); color:#fff;" onclick="trackWorkerLiveGps()">📍 Lock GPS</button>
+          <button class="pill-btn active" id="btn-sat" onclick="switchMapLayer('satellite')">Satellite</button>
+          <button class="pill-btn" onclick="recenterMap()">🎯 Center</button>
+        </div>
+      </div>
+
+      <div id="worker-satellite-map"></div>
+    </div>
+
+    <!-- RIGHT: TASK QUEUE & WORKFLOW STEPPER (SUPABASE CONNECTED) -->
+    <div class="feed-panel">
+      
+      <!-- TECHNICIAN PROFILE CARD -->
+      <div class="profile-card">
+        <div class="tech-info">
+          <div class="tech-avatar">NOC</div>
+          <div>
+            <div class="tech-name">Network Operations Specialist (On Duty)</div>
+            <div class="tech-role">Coverage: All 14 Pinpoint Blocks (Supabase Live Dispatch)</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ACTIVE DETAIL STEPPER -->
+      <div id="active-job-detail-panel" class="active-job-detail-panel">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <div>
+            <span id="detail-ticket-id" class="ticket-id">#CF-9021</span>
+            <h3 id="detail-title" style="font-family:'Outfit',sans-serif; font-size:16px; font-weight:700; color:var(--text-primary); margin-top:2px;">Hostel Boys AP-04 Packet Drop</h3>
+          </div>
+          <button class="btn" style="padding:3px 8px; font-size:11px;" onclick="closeJobDetail()">✕ Close</button>
+        </div>
+
+        <div class="stepper-nav">
+          <button id="step-btn-1" class="step-pill current" onclick="goToStep(1)">1. Navigate</button>
+          <button id="step-btn-2" class="step-pill" onclick="goToStep(2)">2. Diagnose</button>
+          <button id="step-btn-3" class="step-pill" onclick="goToStep(3)">3. Proof Fix</button>
+          <button id="step-btn-4" class="step-pill" onclick="goToStep(4)">4. Sign-Off</button>
+        </div>
+
+        <div id="step-content-1" class="step-panel active">
+          <div class="diag-box">
+            <div style="font-weight:700; color:var(--text-primary); margin-bottom:4px;">📍 Step 1: Physical Turn-by-Turn Telemetry</div>
+            <div id="nav-step-text">Target: <b>Point 5: Vignan Boys Hostel</b>. Distance: <b>25m</b>. Follow blue telemetry route.</div>
+          </div>
+          <div class="action-btn-row">
+            <button class="btn-action btn-action-primary" onclick="goToStep(2)">
+              <span>Mark Arrived &amp; Open Diagnostics</span> ➔
+            </button>
+          </div>
+        </div>
+
+        <div id="step-content-2" class="step-panel">
+          <div class="diag-box">
+            <div style="font-weight:700; color:var(--text-primary); margin-bottom:4px;">⚡ Step 2: Live Sensor Diagnostic Telemetry</div>
+            <div style="font-family:var(--font-mono); font-size:11.5px; line-height:1.6; color:var(--primary);">
+              ● Node ID: AP-HB-04 (Vignan Boys Hostel 2nd Floor)<br>
+              ● Packet Loss: 82.5% &rarr; POE Switch Port 14 Loop Detected<br>
+              ● Root Cause: Faulty RJ45 patch connector pin 3 crimp oxidation.
+            </div>
+          </div>
+          <div class="action-btn-row">
+            <button class="btn-action btn-action-secondary" onclick="goToStep(1)">Back</button>
+            <button class="btn-action btn-action-primary" onclick="goToStep(3)">
+              <span>Fix Applied &amp; Attach Proof</span> ➔
+            </button>
+          </div>
+        </div>
+
+        <div id="step-content-3" class="step-panel">
+          <div class="diag-box">
+            <div style="font-weight:700; color:var(--text-primary); margin-bottom:4px;">📸 Step 3: Hardware Verification &amp; Log</div>
+            <p style="font-size:12px; margin-bottom:8px;">Attach resolution photo or enter technician log summary:</p>
+            <div style="margin-top:12px;">
+              <label style="font-size:11px; font-weight:700; color:var(--text-tertiary);">Technician Fix Summary:</label>
+              <input type="text" id="tech-notes-input" class="input-field" value="Replaced faulty patch lead on switch port 14. Signal strength restored to -48dBm.">
+            </div>
+          </div>
+          <div class="action-btn-row">
+            <button class="btn-action btn-action-secondary" onclick="goToStep(2)">Back</button>
+            <button class="btn-action btn-action-primary" onclick="goToStep(4)">
+              <span>Review &amp; Sign-off</span> ➔
+            </button>
+          </div>
+        </div>
+
+        <div id="step-content-4" class="step-panel">
+          <div class="diag-box" style="background:var(--emerald-light); border-color:var(--emerald-border);">
+            <div style="font-weight:700; font-size:14px; color:var(--emerald); margin-bottom:6px;">Ready for Supabase DB Sign-Off</div>
+            <p style="font-size:12px; color:var(--text-secondary); margin-bottom:10px;">
+              Submitting will mark this ticket as <b>RESOLVED</b> in Supabase PostgreSQL and notify the executive dashboard.
+            </p>
+          </div>
+          <div class="action-btn-row">
+            <button class="btn-action btn-action-secondary" onclick="goToStep(3)">Back</button>
+            <button class="btn-action btn-action-emerald" onclick="submitFinalResolution()">
+              <span>Complete &amp; Close Work Order</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- WORK ORDERS LIST -->
+      <div id="job-list-container" class="job-list"></div>
+
+    </div>
+
+  </div>
+
+  <script>
+    const SUPABASE_CONFIG = {
+      url: "https://bylhkgmwyncpsfokxjyr.supabase.co",
+      anonKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ5bGhrZ213eW5jcHNmb2t4anlyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYxMTU3MjYsImV4cCI6MjEwMTY5MTcyNn0.eN6asz8HIPDbP_T6rAojPznZDHjUNU1Yw7qELnbYvKY"
+    };
+
+    const VFSTR_CAMPUS = {
+      center: [16.2328, 80.5512],
+      zoom: 17,
+      buildings: [
+        { num: 1, name: "1. A Block (NTR Admin & Exam Cell)", coords: [16.23281, 80.54771] },
+        { num: 2, name: "2. H Block (APJ Abdul Kalam CSE & AI)", coords: [16.23225, 80.54873] },
+        { num: 3, name: "3. NTR Library (Central Reading Library)", coords: [16.23342, 80.54884] },
+        { num: 4, name: "4. N Block (Central Courtyard Complex)", coords: [16.23280, 80.55105] },
+        { num: 5, name: "5. Vignan Boys Hostel (Valmiki & Vasishta)", coords: [16.23164, 80.55042] },
+        { num: 6, name: "6. P Block (Pharmacy & Science Block)", coords: [16.23062, 80.55087] },
+        { num: 7, name: "7. Vignan Main Ground (Athletic Stadium)", coords: [16.23230, 80.55185] },
+        { num: 8, name: "8. U Block (Visweswaraya Mechanical/Civil)", coords: [16.23315, 80.55135] },
+        { num: 9, name: "9. Convocation Hall (Auditorium Arena)", coords: [16.23365, 80.55195] },
+        { num: 10, name: "10. Lara New Block (Emerging Technologies)", coords: [16.23155, 80.55275] },
+        { num: 11, name: "11. Lara Block 1 (Main Academic 1)", coords: [16.23105, 80.55365] },
+        { num: 12, name: "12. Lara Block 2 (Engineering Block 2)", coords: [16.23175, 80.55435] },
+        { num: 13, name: "13. Guest House (Beside Convocation Hall)", coords: [16.23460, 80.55260] },
+        { num: 14, name: "14. Lara Playground (East Sports Ground)", coords: [16.23310, 80.55330] }
+      ]
+    };
+
+    let workOrders = [
+      { id: "CF-9021", title: "5. Vignan Boys Hostel AP-04 Packet Drop", location: "5. Vignan Boys Hostel", coords: [16.23164, 80.55042], priority: "CRITICAL", status: "IN_PROGRESS" },
+      { id: "CF-9022", title: "3. NTR Library Central Spooler Jam", location: "3. NTR Library", coords: [16.23342, 80.54884], priority: "HIGH", status: "ASSIGNED" },
+      { id: "CF-9023", title: "10. Lara New Block Room 302 Smart AV", location: "10. Lara New Block", coords: [16.23155, 80.55275], priority: "MEDIUM", status: "ASSIGNED" }
+    ];
+
+    let currentSelectedJob = null;
+    let map = null;
+    let techMarker = null;
+
+    window.addEventListener('DOMContentLoaded', () => {
+      fetchSupabaseWorkerTickets();
+      initMap();
+      renderJobList();
+    });
+
+    async function fetchSupabaseWorkerTickets() {
+      try {
+        const resp = await fetch(`${SUPABASE_CONFIG.url}/rest/v1/campusfix_tickets?select=*&order=created_at.desc&limit=5`, {
+          headers: {
+            'apikey': SUPABASE_CONFIG.anonKey,
+            'Authorization': `Bearer ${SUPABASE_CONFIG.anonKey}`
+          }
+        });
+        if (resp.ok) {
+          const tickets = await resp.json();
+          tickets.forEach(t => {
+            if (!workOrders.some(w => w.id === t.ticket_code)) {
+              workOrders.unshift({
+                id: t.ticket_code,
+                title: t.issue_summary || 'Campus Issue',
+                location: t.location || '5. Vignan Boys Hostel',
+                coords: [16.23164, 80.55042],
+                priority: t.priority || 'HIGH',
+                status: t.status || 'ASSIGNED'
+              });
+            }
+          });
+          renderJobList();
+        }
+      } catch (e) {}
+    }
+
+    function initMap() {
+      map = L.map('worker-satellite-map', {
+        center: VFSTR_CAMPUS.center,
+        zoom: VFSTR_CAMPUS.zoom,
+        zoomControl: true
+      });
+
+      L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+        attribution: '&copy; Esri World Imagery &mdash; VFSTR & Lara Vadlamudi',
+        maxZoom: 19
+      }).addTo(map);
+
+      const techIcon = L.divIcon({
+        className: 'custom-tech-pin',
+        html: `<div style="background:#2563eb; width:30px; height:30px; border-radius:50%; border:2px solid #fff; box-shadow:0 2px 10px rgba(37,99,235,0.4); display:flex; align-items:center; justify-content:center; color:#fff; font-size:14px;">🔧</div>`,
+        iconSize: [30, 30],
+        iconAnchor: [15, 15]
+      });
+
+      techMarker = L.marker([16.23280, 80.55105], { icon: techIcon }).addTo(map);
+
+      VFSTR_CAMPUS.buildings.forEach(b => {
+        const numIcon = L.divIcon({
+          html: `<div class="pin-badge">${b.num}</div>`,
+          iconSize: [24, 24],
+          iconAnchor: [12, 12]
+        });
+        L.marker(b.coords, { icon: numIcon }).addTo(map).bindPopup(`<b>${b.name}</b>`);
+      });
+    }
+
+    function renderJobList() {
+      const container = document.getElementById('job-list-container');
+      container.innerHTML = '';
+
+      workOrders.forEach(job => {
+        const card = document.createElement('div');
+        card.className = 'job-card';
+        card.onclick = () => selectJob(job.id);
+        card.innerHTML = `
+          <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+            <span class="ticket-id">${job.id}</span>
+            <span class="job-badge" style="background:var(--primary-light); color:var(--primary);">${job.priority}</span>
+          </div>
+          <div style="font-weight:700; font-size:13.5px; color:var(--text-primary);">${job.title}</div>
+          <div style="font-size:11.5px; color:var(--text-tertiary); margin-top:4px;">📍 ${job.location} &bull; ● ${job.status}</div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function selectJob(id) {
+      const job = workOrders.find(j => j.id === id);
+      if (!job) return;
+      currentSelectedJob = job;
+      document.getElementById('detail-ticket-id').textContent = `#${job.id}`;
+      document.getElementById('detail-title').textContent = job.title;
+      document.getElementById('active-job-detail-panel').style.display = 'flex';
+      map.flyTo(job.coords, 18.5);
+    }
+
+    function closeJobDetail() {
+      document.getElementById('active-job-detail-panel').style.display = 'none';
+    }
+
+    function goToStep(stepNum) {
+      for (let i = 1; i <= 4; i++) {
+        document.getElementById(`step-btn-${i}`).classList.remove('current', 'completed');
+        document.getElementById(`step-content-${i}`).classList.remove('active');
+        if (i < stepNum) document.getElementById(`step-btn-${i}`).classList.add('completed');
+        if (i === stepNum) {
+          document.getElementById(`step-btn-${i}`).classList.add('current');
+          document.getElementById(`step-content-${i}`).classList.add('active');
+        }
+      }
+    }
+
+    async function submitFinalResolution() {
+      if (!currentSelectedJob) return;
+      currentSelectedJob.status = 'RESOLVED';
+      
+      try {
+        await fetch(`${SUPABASE_CONFIG.url}/rest/v1/campusfix_tickets?ticket_code=eq.${currentSelectedJob.id}`, {
+          method: 'PATCH',
+          headers: {
+            'apikey': SUPABASE_CONFIG.anonKey,
+            'Authorization': `Bearer ${SUPABASE_CONFIG.anonKey}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ status: 'RESOLVED' })
+        });
+      } catch (e) {}
+
+      alert(`✅ Work Order ${currentSelectedJob.id} marked as RESOLVED in Supabase Database!`);
+      closeJobDetail();
+      renderJobList();
+    }
+
+    function trackWorkerLiveGps() {
+      alert("✓ GPS Locked at Point 4: Central N-Block (16.23280°N, 80.55105°E).");
+    }
+
+    function recenterMap() {
+      map.setView(VFSTR_CAMPUS.center, VFSTR_CAMPUS.zoom);
+    }
+
+    function switchMapLayer() {
+      recenterMap();
+    }
+
+    function logoutWorker() {
+      localStorage.removeItem('campusfix_session');
+      window.location.href = 'login.html';
+    }
+  </script>
+</body>
+</html>

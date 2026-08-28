@@ -1,0 +1,680 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>VFSTR Executive Command — Supabase Cloud Backend &amp; Telemetry</title>
+  
+  <!-- Premium Fonts: Plus Jakarta Sans + Outfit + JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Outfit:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Leaflet Satellite Map Engine -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <style>
+    :root {
+      --bg-base: #f8fafc;
+      --bg-surface: #ffffff;
+      --bg-subtle: #f1f5f9;
+      --bg-muted: #e2e8f0;
+      
+      --text-primary: #0f172a;
+      --text-secondary: #475569;
+      --text-tertiary: #64748b;
+      --text-muted: #94a3b8;
+      
+      --primary: #2563eb;
+      --primary-hover: #1d4ed8;
+      --primary-light: #eff6ff;
+      --primary-border: #bfdbfe;
+      
+      --emerald: #059669;
+      --emerald-light: #ecfdf5;
+      --emerald-border: #a7f3d0;
+      
+      --amber: #d97706;
+      --amber-light: #fffbeb;
+      --amber-border: #fde68a;
+      
+      --rose: #dc2626;
+      --rose-light: #fef2f2;
+      --rose-border: #fecaca;
+      
+      --sky: #0284c7;
+      --sky-light: #f0f9ff;
+      --sky-border: #bae6fd;
+
+      --purple: #7c3aed;
+      --purple-light: #f5f3ff;
+      --purple-border: #ddd6fe;
+
+      --border-subtle: #e2e8f0;
+      --border-focus: #3b82f6;
+      
+      --shadow-xs: 0 1px 2px 0 rgba(15, 23, 42, 0.04);
+      --shadow-sm: 0 1px 3px 0 rgba(15, 23, 42, 0.05), 0 1px 2px -1px rgba(15, 23, 42, 0.03);
+      --shadow-md: 0 4px 6px -1px rgba(15, 23, 42, 0.05), 0 2px 4px -2px rgba(15, 23, 42, 0.03);
+      --shadow-card: 0 4px 20px -2px rgba(15, 23, 42, 0.05), 0 0 0 1px #e2e8f0;
+      
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 16px;
+      --radius-xl: 20px;
+      
+      --font-mono: 'JetBrains Mono', monospace;
+      --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: var(--bg-base);
+      color: var(--text-primary);
+      min-height: 100vh;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+
+    /* SCROLLBAR */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--bg-muted); border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+    /* TOP HEADER */
+    .admin-header {
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      background: #ffffff;
+      border-bottom: 1px solid var(--border-subtle);
+      padding: 12px 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .brand-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+      color: var(--text-primary);
+    }
+
+    .vfstr-logo-emblem {
+      width: 38px; height: 38px;
+      background: linear-gradient(135deg, #1e40af 0%, #2563eb 100%);
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #ffffff;
+      box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25);
+    }
+
+    .brand-title {
+      font-family: 'Outfit', sans-serif;
+      font-weight: 700;
+      font-size: 18px;
+      letter-spacing: -0.4px;
+      color: var(--text-primary);
+    }
+
+    .brand-tag {
+      background: var(--emerald-light);
+      border: 1px solid var(--emerald-border);
+      color: var(--emerald);
+      padding: 2px 8px;
+      border-radius: 6px;
+      font-size: 10px;
+      font-weight: 700;
+      font-family: var(--font-mono);
+      letter-spacing: 0.5px;
+    }
+
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 14px;
+      border-radius: var(--radius-md);
+      font-family: inherit;
+      font-size: 12.5px;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid var(--border-subtle);
+      background: #ffffff;
+      color: var(--text-secondary);
+      text-decoration: none;
+      box-shadow: var(--shadow-xs);
+      transition: all 0.15s ease;
+    }
+
+    .btn:hover {
+      border-color: var(--text-muted);
+      color: var(--text-primary);
+      transform: translateY(-1px);
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: #ffffff;
+      border: 1px solid var(--primary);
+      box-shadow: 0 2px 6px rgba(37, 99, 235, 0.2);
+    }
+
+    .btn-primary:hover {
+      background: var(--primary-hover);
+      color: #ffffff;
+    }
+
+    .btn-emerald {
+      background: var(--emerald);
+      color: #ffffff;
+      border: 1px solid var(--emerald);
+      box-shadow: 0 2px 6px rgba(5, 150, 105, 0.2);
+    }
+
+    .btn-danger {
+      color: var(--rose);
+      border-color: var(--rose-border);
+      background: var(--rose-light);
+    }
+
+    .btn-danger:hover {
+      background: #fee2e2;
+      border-color: var(--rose);
+    }
+
+    /* MAIN CONTAINER */
+    .admin-container {
+      max-width: 1440px;
+      margin: 18px auto 40px auto;
+      padding: 0 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    /* METRICS RIBBON */
+    .metrics-ribbon {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+    }
+
+    .metric-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 16px 20px;
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .metric-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .metric-title {
+      font-size: 11.5px;
+      font-weight: 700;
+      color: var(--text-tertiary);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .metric-value {
+      font-family: 'Outfit', sans-serif;
+      font-size: 26px;
+      font-weight: 800;
+      color: var(--text-primary);
+    }
+
+    .metric-caption {
+      font-size: 11.5px;
+      color: var(--text-secondary);
+    }
+
+    /* DUAL PANE COMMAND GRID */
+    .command-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      align-items: stretch;
+    }
+
+    .glass-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-xl);
+      padding: 20px;
+      box-shadow: var(--shadow-card);
+      display: flex;
+      flex-direction: column;
+      min-height: 520px;
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .card-title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 16.5px;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    #admin-tactical-map {
+      flex: 1;
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--border-subtle);
+      overflow: hidden;
+      min-height: 440px;
+      background: #0f172a;
+    }
+
+    .pin-badge {
+      background: #dc2626;
+      color: #ffffff;
+      font-family: 'Outfit', sans-serif;
+      font-weight: 800;
+      font-size: 11.5px;
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 2px solid #ffffff;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.35);
+      cursor: pointer;
+    }
+
+    .pin-badge.guest-house {
+      background: #7c3aed;
+    }
+
+    .stream-list {
+      flex: 1;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      padding-right: 4px;
+    }
+
+    .stream-item {
+      background: var(--bg-subtle);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 12px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: all 0.15s ease;
+    }
+
+    .stream-item:hover {
+      border-color: var(--primary-border);
+      background: #ffffff;
+      box-shadow: var(--shadow-sm);
+    }
+
+    @media (max-width: 1024px) {
+      .metrics-ribbon { grid-template-columns: repeat(2, 1fr); }
+      .command-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- TOP HEADER -->
+  <header class="admin-header">
+    <a href="admin.html" class="brand-group">
+      <div class="vfstr-logo-emblem">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="3"></circle>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+        </svg>
+      </div>
+      <div>
+        <span class="brand-title">VFSTR <b>Executive Command</b></span>
+        <span class="brand-tag">☁️ SUPABASE POSTGRESQL SYNC</span>
+      </div>
+    </a>
+
+    <div class="nav-actions">
+      <a href="index.html" class="btn">
+        <span>Grievance Studio</span>
+      </a>
+      <a href="worker.html" class="btn">
+        <span>Field Operations</span>
+      </a>
+      <a href="it_admin.html" class="btn">
+        <span>NOC Telemetry</span>
+      </a>
+      <button class="btn btn-danger" onclick="logoutAdmin()">
+        <span>Sign Out</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- MAIN DASHBOARD CONTAINER -->
+  <main class="admin-container">
+    
+    <!-- METRICS RIBBON -->
+    <div class="metrics-ribbon">
+      <div class="metric-card">
+        <div class="metric-header">
+          <span class="metric-title">Master Incidents</span>
+          <span style="font-size:16px;">🚨</span>
+        </div>
+        <div class="metric-value" style="color:var(--rose);" id="metric-active-tickets">3 Clusters</div>
+        <div class="metric-caption">Synced via Supabase Cloud PostgreSQL</div>
+      </div>
+
+      <div class="metric-card">
+        <div class="metric-header">
+          <span class="metric-title">Technicians on Duty</span>
+          <span style="font-size:16px;">👥</span>
+        </div>
+        <div class="metric-value" style="color:var(--primary);">6 Units</div>
+        <div class="metric-caption">Smart Proximity Auto-Assign Active</div>
+      </div>
+
+      <div class="metric-card">
+        <div class="metric-header">
+          <span class="metric-title">Mean Resolution Time</span>
+          <span style="font-size:16px;">⏱️</span>
+        </div>
+        <div class="metric-value" style="color:var(--emerald);">8.2 Mins</div>
+        <div class="metric-caption">Proximity GPS reduced travel by 42%</div>
+      </div>
+
+      <div class="metric-card">
+        <div class="metric-header">
+          <span class="metric-title">Predictive Alert Score</span>
+          <span style="font-size:16px;">🔥</span>
+        </div>
+        <div class="metric-value" style="color:var(--amber);">2 Warnings</div>
+        <div class="metric-caption">Point 8 (U Block) &bull; Point 3 (Library)</div>
+      </div>
+    </div>
+
+    <!-- COMMAND GRID: SATELLITE MAP + WORK ORDERS -->
+    <div class="command-grid">
+      
+      <!-- LEFT: SATELLITE MAP (WITH HEATMAP TOGGLE & SPECIALISTS) -->
+      <div class="glass-card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Tactical Spatial Twin &amp; Heatmap Radar</div>
+            <div style="font-size:11.5px; color:var(--text-tertiary);">Live specialist GPS beacons &bull; Predictive density overlay</div>
+          </div>
+          <div style="display:flex; gap:6px;">
+            <button class="btn btn-emerald" style="font-size:11px; padding:4px 9px;" onclick="toggleAdminHeatmap()">🔥 Heatmap</button>
+            <button class="btn btn-primary" style="font-size:11px; padding:4px 9px;" onclick="recenterAdminMap()">🎯 Recenter</button>
+          </div>
+        </div>
+        <div id="admin-tactical-map"></div>
+      </div>
+
+      <!-- RIGHT: LIVE WORK ORDERS STREAM (SUPABASE SYNCED) -->
+      <div class="glass-card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Master Work Order &amp; Nearest-Tech Dispatch</div>
+            <div style="font-size:11.5px; color:var(--text-tertiary);">Live Supabase Stream &bull; Smart Deduplication Clusters</div>
+          </div>
+          <button class="btn btn-emerald" style="font-size:11px; padding:4px 9px;" onclick="openBroadcastModal()">📢 Broadcast Alert</button>
+        </div>
+
+        <div class="stream-list" id="admin-stream-list">
+          
+          <div class="stream-item">
+            <div>
+              <div style="display:flex; align-items:center; gap:8px;">
+                <b style="font-family:var(--font-mono); color:var(--rose);">#CF-9021</b>
+                <span style="font-size:10px; font-weight:700; background:var(--rose-light); color:var(--rose); padding:1px 6px; border-radius:4px;">CRITICAL</span>
+                <span style="font-size:10px; font-weight:700; background:var(--amber-light); color:var(--amber); padding:1px 6px; border-radius:4px;">👥 14 MERGED</span>
+              </div>
+              <div style="font-weight:700; font-size:13px; color:var(--text-primary); margin-top:2px;">5. Vignan Boys Hostel AP-HB-04 Packet Loss</div>
+              <div style="font-size:11.5px; color:var(--text-tertiary);">📍 Point 5: Vignan Boys Hostel &bull; 👤 Network Operations Specialist (82m away • ETA: 1.3 Mins)</div>
+            </div>
+            <button class="btn btn-primary" style="font-size:11px; padding:4px 8px;" onclick="focusOnAdminPin([16.23164, 80.55042], '5. Vignan Boys Hostel')">Locate ➔</button>
+          </div>
+
+          <div class="stream-item">
+            <div>
+              <div style="display:flex; align-items:center; gap:8px;">
+                <b style="font-family:var(--font-mono); color:var(--primary);">#CF-9022</b>
+                <span style="font-size:10px; font-weight:700; background:var(--primary-light); color:var(--primary); padding:1px 6px; border-radius:4px;">HIGH</span>
+                <span style="font-size:10px; font-weight:700; background:var(--amber-light); color:var(--amber); padding:1px 6px; border-radius:4px;">👥 5 MERGED</span>
+              </div>
+              <div style="font-weight:700; font-size:13px; color:var(--text-primary); margin-top:2px;">3. NTR Library Spooler Buffer Stalled</div>
+              <div style="font-size:11.5px; color:var(--text-tertiary);">📍 Point 3: NTR Library &bull; 👤 Digital Printing Lead (On Site • ETA: 0 Mins)</div>
+            </div>
+            <button class="btn btn-primary" style="font-size:11px; padding:4px 8px;" onclick="focusOnAdminPin([16.23342, 80.54884], '3. NTR Library')">Locate ➔</button>
+          </div>
+
+          <div class="stream-item">
+            <div>
+              <div style="display:flex; align-items:center; gap:8px;">
+                <b style="font-family:var(--font-mono); color:var(--amber);">#CF-9023</b>
+                <span style="font-size:10px; font-weight:700; background:var(--amber-light); color:var(--amber); padding:1px 6px; border-radius:4px;">MEDIUM</span>
+              </div>
+              <div style="font-weight:700; font-size:13px; color:var(--text-primary); margin-top:2px;">10. Lara New Block Room 302 Smart AV Matrix</div>
+              <div style="font-size:11.5px; color:var(--text-tertiary);">📍 Point 10: Lara New Block &bull; 👤 Smart Classroom AV Specialist (On Site • ETA: 0.5 Mins)</div>
+            </div>
+            <button class="btn btn-primary" style="font-size:11px; padding:4px 8px;" onclick="focusOnAdminPin([16.23155, 80.55275], '10. Lara New Block')">Locate ➔</button>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+
+  </main>
+
+  <script>
+    const SUPABASE_CONFIG = {
+      url: "https://bylhkgmwyncpsfokxjyr.supabase.co",
+      anonKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ5bGhrZ213eW5jcHNmb2t4anlyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYxMTU3MjYsImV4cCI6MjEwMTY5MTcyNn0.eN6asz8HIPDbP_T6rAojPznZDHjUNU1Yw7qELnbYvKY"
+    };
+
+    const VFSTR_CAMPUS = {
+      center: [16.2328, 80.5512],
+      zoom: 17,
+      landmarks: [
+        { num: 1, name: "1. A Block (NTR Admin & Exam Cell)", coords: [16.23281, 80.54771], desc: "West Wing Administrative & Exam Center", heat: 0.15 },
+        { num: 2, name: "2. H Block (APJ Abdul Kalam CSE & AI)", coords: [16.23225, 80.54873], desc: "South-West Academic Computer Science Wing", heat: 0.25 },
+        { num: 3, name: "3. NTR Library (Central Reading Library)", coords: [16.23342, 80.54884], desc: "Circular Library Building on North Edge of Woods", heat: 0.65 },
+        { num: 4, name: "4. N Block (Central Courtyard Complex)", coords: [16.23280, 80.55105], desc: "Central Courtyard of N-Block Multi-Wing Complex", heat: 0.20 },
+        { num: 5, name: "5. Vignan Boys Hostel (Valmiki & Vasishta)", coords: [16.23164, 80.55042], desc: "Residential Sector Directly South of Tennis Courts", heat: 0.95 },
+        { num: 6, name: "6. P Block (Pharmacy & Science Block)", coords: [16.23062, 80.55087], desc: "Southern Perimeter Pharmacy & Sciences Building", heat: 0.10 },
+        { num: 7, name: "7. Vignan Main Ground (Athletic Stadium)", coords: [16.23230, 80.55185], desc: "Center of Oval Green Athletic Track Stadium", heat: 0.10 },
+        { num: 8, name: "8. U Block (Visweswaraya Mechanical/Civil)", coords: [16.23315, 80.55135], desc: "Building Directly Beside N-Block (4 Next Building 8)", heat: 0.70 },
+        { num: 9, name: "9. Convocation Hall (Auditorium Arena)", coords: [16.23365, 80.55195], desc: "Building Directly Next to U-Block with Yellow Roof (8 Next 9)", heat: 0.20 },
+        { num: 10, name: "10. Lara New Block (Emerging Technologies)", coords: [16.23155, 80.55275], desc: "South-East of Main Ground Emerging Tech", heat: 0.55 },
+        { num: 11, name: "11. Lara Block 1 (Main Academic Block 1)", coords: [16.23105, 80.55365], desc: "South-Eastern Lara Engineering Academic 1", heat: 0.35 },
+        { num: 12, name: "12. Lara Block 2 (Engineering Block 2)", coords: [16.23175, 80.55435], desc: "East Lara Engineering Academic Block 2", heat: 0.20 },
+        { num: 13, name: "13. Guest House (Beside Convocation Hall)", coords: [16.23460, 80.55260], desc: "Executive VIP Suites directly beside Convocation Hall", heat: 0.10 },
+        { num: 14, name: "14. Lara Playground (East Sports Ground)", coords: [16.23310, 80.55330], desc: "Eastern Sports Ground East of Convocation Hall", heat: 0.05 }
+      ]
+    };
+
+    let adminMap = null;
+    let heatLayerGroup = null;
+    let isHeatmapActive = false;
+
+    window.addEventListener('DOMContentLoaded', () => {
+      initAdminMap();
+      fetchSupabaseAdminTickets();
+    });
+
+    async function fetchSupabaseAdminTickets() {
+      try {
+        const resp = await fetch(`${SUPABASE_CONFIG.url}/rest/v1/campusfix_tickets?select=*&order=created_at.desc&limit=6`, {
+          headers: {
+            'apikey': SUPABASE_CONFIG.anonKey,
+            'Authorization': `Bearer ${SUPABASE_CONFIG.anonKey}`
+          }
+        });
+        if (resp.ok) {
+          const tickets = await resp.json();
+          if (tickets.length > 0) {
+            const list = document.getElementById('admin-stream-list');
+            list.innerHTML = '';
+            tickets.forEach(t => {
+              const div = document.createElement('div');
+              div.className = 'stream-item';
+              div.innerHTML = `
+                <div>
+                  <div style="display:flex; align-items:center; gap:8px;">
+                    <b style="font-family:var(--font-mono); color:var(--primary);">#${t.ticket_code}</b>
+                    <span style="font-size:10px; font-weight:700; background:var(--primary-light); color:var(--primary); padding:1px 6px; border-radius:4px;">${t.priority || 'HIGH'}</span>
+                    <span style="font-size:10px; font-weight:700; background:var(--emerald-light); color:var(--emerald); padding:1px 6px; border-radius:4px;">SUPABASE SYNCED</span>
+                  </div>
+                  <div style="font-weight:700; font-size:13px; color:var(--text-primary); margin-top:2px;">${t.issue_summary || 'Campus Grievance'}</div>
+                  <div style="font-size:11.5px; color:var(--text-tertiary);">📍 ${t.location} &bull; 👤 ${t.assigned_team || 'Network Operations Specialist'}</div>
+                </div>
+                <button class="btn btn-primary" style="font-size:11px; padding:4px 8px;" onclick="focusOnAdminPin([16.2328, 80.5512], '${t.location}')">Locate ➔</button>
+              `;
+              list.appendChild(div);
+            });
+          }
+        }
+      } catch (e) {}
+    }
+
+    function initAdminMap() {
+      adminMap = L.map('admin-tactical-map', {
+        center: VFSTR_CAMPUS.center,
+        zoom: VFSTR_CAMPUS.zoom,
+        zoomControl: true
+      });
+
+      L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+        attribution: '&copy; Esri World Imagery &mdash; VFSTR & Lara Vadlamudi',
+        maxZoom: 19
+      }).addTo(adminMap);
+
+      heatLayerGroup = L.layerGroup().addTo(adminMap);
+
+      VFSTR_CAMPUS.landmarks.forEach(b => {
+        const isGuestHouse = b.num === 13;
+        const color = isGuestHouse ? '#7c3aed' : '#2563eb';
+
+        L.circle(b.coords, {
+          color: color,
+          fillColor: color,
+          fillOpacity: 0.18,
+          radius: 26,
+          weight: 2
+        }).addTo(adminMap).bindTooltip(b.name, { permanent: false, direction: 'top' });
+
+        const numIcon = L.divIcon({
+          className: 'numbered-pin-wrapper',
+          html: `<div class="${isGuestHouse ? 'pin-badge guest-house' : 'pin-badge'}">${b.num}</div>`,
+          iconSize: [26, 26],
+          iconAnchor: [13, 13]
+        });
+
+        L.marker(b.coords, { icon: numIcon }).addTo(adminMap).bindPopup(`
+          <div style="font-family:'Plus Jakarta Sans',sans-serif; padding:4px;">
+            <b style="color:#0f172a; font-size:13px;">${b.name}</b><br>
+            <span style="font-size:11.5px; color:#64748b;">${b.desc}</span><br>
+            <span style="font-size:10.5px; font-family:var(--font-mono); color:var(--primary);">Thermal Heat: ${(b.heat * 100).toFixed(0)}%</span>
+          </div>
+        `);
+      });
+
+      const specialists = [
+        { name: "Network Operations Specialist", coords: [16.23280, 80.55105], icon: "📡" },
+        { name: "Smart Classroom AV Specialist", coords: [16.23155, 80.55275], icon: "📽️" },
+        { name: "Substation & Electrical Team", coords: [16.23105, 80.55365], icon: "⚡" },
+        { name: "Digital Printing Lead", coords: [16.23342, 80.54884], icon: "🖨️" }
+      ];
+
+      specialists.forEach(s => {
+        const specIcon = L.divIcon({
+          html: `<div style="background:#2563eb; width:26px; height:26px; border-radius:50%; border:2px solid #fff; box-shadow:0 2px 10px rgba(37,99,235,0.4); display:flex; align-items:center; justify-content:center; color:#fff; font-size:12px;">${s.icon}</div>`,
+          iconSize: [26, 26],
+          iconAnchor: [13, 13]
+        });
+        L.marker(s.coords, { icon: specIcon }).addTo(adminMap).bindPopup(`<b>${s.name} (Live GPS)</b>`);
+      });
+
+      setTimeout(() => { if (adminMap) adminMap.invalidateSize(); }, 200);
+    }
+
+    function toggleAdminHeatmap() {
+      isHeatmapActive = !isHeatmapActive;
+      heatLayerGroup.clearLayers();
+
+      if (isHeatmapActive) {
+        VFSTR_CAMPUS.landmarks.forEach(b => {
+          let heatColor = '#10b981';
+          if (b.heat >= 0.8) heatColor = '#dc2626';
+          else if (b.heat >= 0.5) heatColor = '#f59e0b';
+          else if (b.heat >= 0.3) heatColor = '#3b82f6';
+
+          L.circle(b.coords, {
+            color: heatColor,
+            fillColor: heatColor,
+            fillOpacity: 0.45,
+            radius: 35 + b.heat * 40,
+            weight: 1
+          }).addTo(heatLayerGroup);
+        });
+      }
+    }
+
+    function recenterAdminMap() {
+      if (adminMap) adminMap.flyTo(VFSTR_CAMPUS.center, VFSTR_CAMPUS.zoom);
+    }
+
+    function focusOnAdminPin(coords, name) {
+      if (adminMap) {
+        adminMap.flyTo(coords, 18.5, { duration: 1.2 });
+      }
+    }
+
+    function openBroadcastModal() {
+      const msg = prompt("📢 Enter campus-wide broadcast advisory for all 14 Blocks:");
+      if (msg) {
+        alert(`✓ Advisory broadcast transmitted across all 14 campus blocks: "${msg}"`);
+      }
+    }
+
+    function logoutAdmin() {
+      localStorage.removeItem('campusfix_session');
+      window.location.href = 'login.html';
+    }
+  </script>
+</body>
+</html>
