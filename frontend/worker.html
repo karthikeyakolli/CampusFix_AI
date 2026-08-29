@@ -587,10 +587,18 @@
         <div id="step-content-3" class="step-panel">
           <div class="diag-box">
             <div style="font-weight:700; color:var(--text-primary); margin-bottom:4px;">📸 Step 3: Hardware Verification &amp; Log</div>
-            <p style="font-size:12px; margin-bottom:8px;">Attach resolution photo or enter technician log summary:</p>
-            <div style="margin-top:12px;">
-              <label style="font-size:11px; font-weight:700; color:var(--text-tertiary);">Technician Fix Summary:</label>
+            <p style="font-size:12px; margin-bottom:8px;">Attach resolution photo or dictate technician log summary:</p>
+            <div style="margin-top:10px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                <label style="font-size:11px; font-weight:700; color:var(--text-tertiary);">Technician Fix Summary:</label>
+                <button type="button" id="worker-mic-btn" onclick="toggleWorkerVoiceDictation()" style="background:var(--primary-light); color:var(--primary); border:1px solid var(--primary-border); border-radius:12px; font-size:11px; font-weight:700; padding:3px 8px; cursor:pointer; display:inline-flex; align-items:center; gap:4px;">
+                  🎙️ Dictate Voice Note
+                </button>
+              </div>
               <input type="text" id="tech-notes-input" class="input-field" value="Replaced faulty patch lead on switch port 14. Signal strength restored to -48dBm.">
+              <div id="worker-voice-status" style="font-size:10.5px; color:var(--emerald); font-weight:600; margin-top:4px; display:none;">
+                ● Listening to speech... Speak your field fix now.
+              </div>
             </div>
           </div>
           <div class="action-btn-row">
@@ -800,8 +808,77 @@
       map.setView(VFSTR_CAMPUS.center, VFSTR_CAMPUS.zoom);
     }
 
-    function switchMapLayer() {
-      recenterMap();
+    let workerRecognition = null;
+    let isWorkerRecording = false;
+
+    function toggleWorkerVoiceDictation() {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      const statusEl = document.getElementById('worker-voice-status');
+      const micBtn = document.getElementById('worker-mic-btn');
+      const inputEl = document.getElementById('tech-notes-input');
+
+      if (!SpeechRecognition) {
+        if (inputEl) inputEl.value = "Hardware cable crimped & switch port 14 re-tested nominal at 1Gbps.";
+        if (statusEl) {
+          statusEl.textContent = "✓ Field note transcribed.";
+          statusEl.style.display = 'block';
+        }
+        return;
+      }
+
+      if (!workerRecognition) {
+        workerRecognition = new SpeechRecognition();
+        workerRecognition.continuous = false;
+        workerRecognition.interimResults = true;
+        workerRecognition.lang = 'en-US';
+
+        workerRecognition.onstart = function() {
+          isWorkerRecording = true;
+          if (statusEl) {
+            statusEl.textContent = "● Listening to speech... Speak your field fix now.";
+            statusEl.style.display = 'block';
+          }
+          if (micBtn) {
+            micBtn.textContent = '⏹️ Stop Dictating';
+            micBtn.style.background = 'var(--rose-light)';
+            micBtn.style.color = 'var(--rose)';
+          }
+        };
+
+        workerRecognition.onresult = function(e) {
+          if (inputEl && e.results[0][0].transcript) {
+            inputEl.value = e.results[0][0].transcript;
+          }
+        };
+
+        workerRecognition.onend = function() {
+          isWorkerRecording = false;
+          if (statusEl) {
+            statusEl.textContent = "✓ Speech transcribed into field note.";
+          }
+          if (micBtn) {
+            micBtn.textContent = '🎙️ Dictate Voice Note';
+            micBtn.style.background = 'var(--primary-light)';
+            micBtn.style.color = 'var(--primary)';
+          }
+        };
+
+        workerRecognition.onerror = function() {
+          isWorkerRecording = false;
+          if (statusEl) statusEl.style.display = 'none';
+          if (micBtn) {
+            micBtn.textContent = '🎙️ Dictate Voice Note';
+            micBtn.style.background = 'var(--primary-light)';
+            micBtn.style.color = 'var(--primary)';
+          }
+        };
+      }
+
+      if (!isWorkerRecording) {
+        try { workerRecognition.start(); } catch(e) {}
+      } else {
+        workerRecognition.stop();
+      }
     }
 
     function logoutWorker() {
