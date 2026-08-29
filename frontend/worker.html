@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>VFSTR Field Operations — Supabase Cloud Specialist Workspace</title>
+  <title>VFSTR Field Operations — Autonomous Cloud Specialist Workspace</title>
   
   <!-- Premium Fonts: Plus Jakarta Sans + Outfit + JetBrains Mono -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -484,7 +484,7 @@
       </div>
       <div>
         <div class="worker-badge">VFSTR <b>Tactical Field Ops</b></div>
-        <div class="brand-tag">☁️ SUPABASE POSTGRESQL LIVE</div>
+        <div class="brand-tag">☁️ AUTONOMOUS CLOUD LIVE</div>
       </div>
     </a>
 
@@ -524,7 +524,7 @@
       <div id="worker-satellite-map"></div>
     </div>
 
-    <!-- RIGHT: TASK QUEUE & WORKFLOW STEPPER (SUPABASE CONNECTED) -->
+    <!-- RIGHT: TASK QUEUE & WORKFLOW STEPPER -->
     <div class="feed-panel">
       
       <!-- TECHNICIAN PROFILE CARD -->
@@ -533,7 +533,7 @@
           <div class="tech-avatar">NOC</div>
           <div>
             <div class="tech-name">Network Operations Specialist (On Duty)</div>
-            <div class="tech-role">Coverage: All 14 Pinpoint Blocks (Supabase Live Dispatch)</div>
+            <div class="tech-role">Coverage: All 14 Pinpoint Blocks (Autonomous Live Dispatch)</div>
           </div>
         </div>
       </div>
@@ -543,9 +543,9 @@
         <div style="display:flex; justify-content:space-between; align-items:center;">
           <div>
             <span id="detail-ticket-id" class="ticket-id">#CF-9021</span>
-            <h3 id="detail-title" style="font-family:'Outfit',sans-serif; font-size:16px; font-weight:700; color:var(--text-primary); margin-top:2px;">Hostel Boys AP-04 Packet Drop</h3>
+            <div id="detail-title" style="font-weight:700; font-size:15px; color:var(--text-primary);">5. Vignan Boys Hostel AP-HB-04 Packet Loss</div>
           </div>
-          <button class="btn" style="padding:3px 8px; font-size:11px;" onclick="closeJobDetail()">✕ Close</button>
+          <button class="btn" style="padding:4px 8px; font-size:12px;" onclick="closeJobDetail()">✕</button>
         </div>
 
         <div class="stepper-nav">
@@ -611,9 +611,9 @@
 
         <div id="step-content-4" class="step-panel">
           <div class="diag-box" style="background:var(--emerald-light); border-color:var(--emerald-border);">
-            <div style="font-weight:700; font-size:14px; color:var(--emerald); margin-bottom:6px;">Ready for Supabase DB Sign-Off</div>
+            <div style="font-weight:700; font-size:14px; color:var(--emerald); margin-bottom:6px;">Ready for Work Order Sign-Off</div>
             <p style="font-size:12px; color:var(--text-secondary); margin-bottom:10px;">
-              Submitting will mark this ticket as <b>RESOLVED</b> in Supabase PostgreSQL and notify the executive dashboard.
+              Submitting will mark this ticket as <b>RESOLVED</b> in the central database and notify the executive dashboard.
             </p>
           </div>
           <div class="action-btn-row">
@@ -795,7 +795,7 @@
         });
       } catch (e) {}
 
-      alert(`✅ Work Order ${currentSelectedJob.id} marked as RESOLVED in Supabase Database!`);
+      alert(`✅ Work Order ${currentSelectedJob.id} marked as RESOLVED!`);
       closeJobDetail();
       renderJobList();
     }

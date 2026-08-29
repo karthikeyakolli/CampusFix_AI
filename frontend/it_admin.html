@@ -3,132 +3,116 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>VFSTR Network Operations Center — Supabase Cloud Telemetry Hub</title>
+  <title>VFSTR Network Operations Center — Autonomous Cloud Telemetry Hub</title>
   
+  <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Outfit:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-
-  <!-- Leaflet Satellite Map Engine -->
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@600;700&family=Plus+Jakarta+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Leaflet Satellite Map -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
   <style>
     :root {
-      --bg-base: #f8fafc;
-      --bg-surface: #ffffff;
-      --bg-subtle: #f1f5f9;
-      --bg-muted: #e2e8f0;
-      
-      --text-primary: #0f172a;
-      --text-secondary: #475569;
-      --text-tertiary: #64748b;
-      --text-muted: #94a3b8;
-      
-      --primary: #2563eb;
-      --primary-hover: #1d4ed8;
-      --primary-light: #eff6ff;
-      --primary-border: #bfdbfe;
-      
-      --emerald: #059669;
-      --emerald-light: #ecfdf5;
-      --emerald-border: #a7f3d0;
-      
-      --amber: #d97706;
-      --amber-light: #fffbeb;
-      --amber-border: #fde68a;
-      
-      --rose: #dc2626;
-      --rose-light: #fef2f2;
-      --rose-border: #fecaca;
-      
+      --bg-base: #0b1329;
+      --bg-card: #131f3d;
+      --bg-subtle: #1e293b;
+      --text-primary: #f8fafc;
+      --text-secondary: #94a3b8;
+      --primary: #3b82f6;
+      --emerald: #10b981;
+      --rose: #ef4444;
+      --amber: #f59e0b;
+      --border: #334155;
       --font-mono: 'JetBrains Mono', monospace;
-      --radius-md: 12px;
-      --radius-lg: 16px;
-      --radius-xl: 20px;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
-      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
-      background-color: var(--bg-base);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background: var(--bg-base);
       color: var(--text-primary);
       min-height: 100vh;
+      display: flex;
+      flex-direction: column;
     }
 
     .top-header {
-      background: #ffffff;
-      border-bottom: 1px solid var(--bg-muted);
-      padding: 12px 28px;
+      background: var(--bg-card);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 24px;
       display: flex;
-      justify-content: space-between;
       align-items: center;
+      justify-content: space-between;
     }
 
     .container {
-      max-width: 1440px;
-      margin: 20px auto;
-      padding: 0 24px;
+      flex: 1;
+      padding: 20px 24px;
       display: flex;
       flex-direction: column;
-      gap: 20px;
+      gap: 16px;
     }
 
     .grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 20px;
+      gap: 16px;
+      flex: 1;
     }
 
     .card {
-      background: #ffffff;
-      border: 1px solid var(--bg-muted);
-      border-radius: var(--radius-xl);
-      padding: 20px;
-      box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.05);
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
     }
 
     #noc-map {
-      height: 480px;
-      border-radius: var(--radius-lg);
-      border: 1px solid var(--bg-muted);
+      flex: 1;
+      min-height: 380px;
+      border-radius: 8px;
+      overflow: hidden;
     }
-
-    .btn {
-      display: inline-flex;
-      align-items: center;
-      padding: 6px 12px;
-      border-radius: var(--radius-md);
-      font-size: 12px;
-      font-weight: 600;
-      border: 1px solid var(--bg-muted);
-      background: #ffffff;
-      cursor: pointer;
-      text-decoration: none;
-      color: var(--text-primary);
-    }
-
-    .btn-primary { background: var(--primary); color: #fff; border-color: var(--primary); }
-    .btn-danger { background: var(--rose-light); color: var(--rose); border-color: var(--rose-border); }
 
     .stream-table {
       width: 100%;
       border-collapse: collapse;
       font-size: 12px;
+      margin-top: 10px;
     }
 
     .stream-table th, .stream-table td {
-      padding: 10px 12px;
+      padding: 8px 10px;
       text-align: left;
-      border-bottom: 1px solid var(--bg-subtle);
+      border-bottom: 1px solid var(--border);
     }
 
     .stream-table th {
-      color: var(--text-tertiary);
+      font-family: var(--font-mono);
+      color: var(--text-secondary);
       font-size: 11px;
-      font-weight: 700;
       text-transform: uppercase;
+    }
+
+    .btn {
+      background: var(--bg-subtle);
+      color: var(--text-primary);
+      border: 1px solid var(--border);
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      text-decoration: none;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
     }
   </style>
 </head>
@@ -139,7 +123,7 @@
       <div style="background:#2563eb; color:#fff; width:36px; height:36px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-weight:800;">NOC</div>
       <div>
         <h2 style="font-family:'Outfit',sans-serif; font-size:17px; font-weight:700;">VFSTR Network Operations Center</h2>
-        <span style="font-size:10.5px; font-family:var(--font-mono); color:var(--emerald); font-weight:700;">● SUPABASE CLOUD BACKEND CONNECTED</span>
+        <span style="font-size:10.5px; font-family:var(--font-mono); color:var(--emerald); font-weight:700;">● AUTONOMOUS CLOUD BACKEND CONNECTED</span>
       </div>
     </div>
 
@@ -153,15 +137,14 @@
   <main class="container">
     <div class="grid">
       
-      <!-- NOC SATELLITE MAP -->
       <div class="card">
         <h3 style="font-family:'Outfit',sans-serif; font-size:16px; font-weight:700; margin-bottom:12px;">Campus Telemetry &amp; Access Point Nodes</h3>
         <div id="noc-map"></div>
       </div>
 
-      <!-- SUPABASE TELEMETRY TABLE -->
+      <!-- TELEMETRY TABLE -->
       <div class="card">
-        <h3 style="font-family:'Outfit',sans-serif; font-size:16px; font-weight:700; margin-bottom:12px;">Live Supabase Database Work Orders</h3>
+        <h3 style="font-family:'Outfit',sans-serif; font-size:16px; font-weight:700; margin-bottom:12px;">Live Cloud Database Work Orders</h3>
         <table class="stream-table">
           <thead>
             <tr>
